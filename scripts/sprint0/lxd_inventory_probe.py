@@ -14,10 +14,12 @@ def main() -> None:
     inventory = {}
     for project in root_client.projects.all():
         project_client = Client(project=project.name)
+        response = project_client.api.instances.get(params={"recursion": 1})
+        response.raise_for_status()
         inventory[project.name] = [
-            {"name": instance.name, "status": instance.status,
-             "uuid": instance.config.get("volatile.uuid")}
-            for instance in project_client.instances.all()
+            {"name": instance["name"], "status": instance["status"],
+             "uuid": instance["config"].get("volatile.uuid")}
+            for instance in response.json()["metadata"]
         ]
     print(json.dumps(inventory, indent=2, sort_keys=True))
 

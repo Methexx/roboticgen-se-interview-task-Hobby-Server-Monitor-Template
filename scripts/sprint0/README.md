@@ -46,6 +46,11 @@ through pylxd. It demonstrates host-wide discovery for the local test setup;
 the application still needs its own stable-ID mapping, persisted inventory, and
 authorization before it can expose any of this data.
 
+The pinned `pylxd` model collection appended `?project=...` to instance names in
+this environment. The probe deliberately uses pylxd's raw project-scoped API
+response with `recursion=1`, which returned canonical names. Treat this as an
+installed-version compatibility observation to cover with application tests.
+
 Dependency purposes and costs:
 
 | Direct dependency | Purpose | Resource/security implications |

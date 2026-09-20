@@ -34,6 +34,29 @@ installation/build waits, excluding subsequent documentation). Active effort
 has not been measured separately. Sprint 0 remains incomplete; later sprints
 have not started. No application acceptance rows have been marked passed.
 
+## Sprint 0 continuation — LXD integration feasibility
+
+The user directed a restart of Ubuntu-24.04 only. It resolved Snap's mount
+namespace mismatch; Docker Desktop was not terminated. The local user was added
+to LXD's root-equivalent group and Ubuntu was restarted again so group membership
+applied. LXD 5.21.7 then discovered a fresh server with no storage, networks or
+instances. Service/socket inspection showed no daemon errors before setup.
+
+Initialized only this new LXD installation using an explicit 12 GiB loop-backed
+Btrfs pool and private bridge. Created the dedicated `hsm` project and the
+known test-only `hsm-observe` project. The `hsm-smoke-renamed` container is
+unprivileged, has RAM/CPU/process/disk limits, and its 4 GiB disk quota rejected
+a bounded 5 GiB write at 3171811328 bytes; the test file was deleted and cleanup
+verified. Its UUID persisted across a stopped rename/restart. Cross-project
+inventory works using a read-only pylxd raw API probe.
+
+Direct pylxd exec streamed 128 KiB via five handlers. Its execute API has no
+timeout argument; a CLI cancellation observation is not sufficient termination
+proof for the eventual app. The tracked evidence has exact commands, outputs,
+library warnings, limitations, and the known test-resource names. Sprint 0
+continues with configuration/migration and OAuth feasibility; no later sprint
+workflow is claimed complete.
+
 ## Sprint 0 evidence — 2026-09-20 (in progress)
 
 Baseline commit: `e117407`. No application source or functional tests exist yet.

@@ -33,12 +33,23 @@ Linux configuration outside Git; `.env.example` remains tracked.
 Reference: [Microsoft WSL installation guidance](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 Current Linux checks: systemd running, Python 3.12.3, Linux Node 24.21.0, and
-Astro 7.3.3 build verified. LXD 5.21.7 installed but CLI startup is blocked by a
-Snap mount namespace issue; Ubuntu-only restart is pending. Do not initialize
-storage until discovery works. [Sprint 0 evidence](docs/sprint0-evidence.md) and
+Astro 7.3.3 build verified. LXD 5.21.7 is running after an Ubuntu-only restart;
+the fresh test server uses a 12 GiB loop-backed Btrfs pool and private bridge.
+The real 4 GiB container disk quota was verified. [Sprint 0 evidence](docs/sprint0-evidence.md) and
 [probe instructions](scripts/sprint0/README.md) document reproducible checks.
 TinyFlux probes selected hourly UTC partitions to reduce measured per-file
 memory use; no production collector or API exists yet.
+
+### Google OAuth prerequisite
+
+Sprint 0 has not verified Google login or callback reachability because no API
+callback endpoint exists yet. Locally, create a Google **Web application** OAuth
+client, configure the exact development redirect URI
+`http://localhost:8000/auth/callback`, request only `openid`, `email`, and
+`profile`, and add the intended accounts as test users while the consent screen
+is in testing. Copy its client ID, client secret, and your verified bootstrap
+email into an ignored `.env` created from `.env.example`; do not put them in Git
+or chat. The configuration loader validates the values when the future API starts.
 
 **Contact:** dev@roboticgen.co
 

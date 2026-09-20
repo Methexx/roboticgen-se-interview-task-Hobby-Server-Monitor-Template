@@ -1,1 +1,28 @@
 
+# Private local instructions and supplied planning references.
+/AGENTS.md
+/START-HERE.md
+/docs/01-requirements.md
+/docs/02-decisions.md
+/docs/03-architecture.md
+/docs/04-data-model.md
+/docs/05-api.md
+/docs/06-security.md
+/docs/07-sprint-plan.md
+/docs/08-report-tracker.md
+/docs/09-decision-register.md
+/docs/10-requirements-verification.md
+/docs/11-windows-wsl-setup.md
+/docs/12-configuration.md
+
+# Local credentials; the committed example remains visible.
+.env
+.env.*
+!.env.example
+
+# Generated development files.
+__pycache__/
+.venv/
+node_modules/
+.astro/
+dist/

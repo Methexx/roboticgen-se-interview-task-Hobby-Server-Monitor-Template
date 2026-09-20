@@ -1,5 +1,45 @@
 # Software Engineer Intern Task — Hobby Server Monitor
 
+## Implementation status — Sprint 0
+
+Repository preparation and environment discovery began on 2026-09-20. The
+repository still contains the original brief below and placeholder manifests;
+there is no runnable application yet. See REPORT.md for observed versions,
+commands, blockers and verification status. Private local planning files are
+ignored; submitted architecture, security, API and setup documentation will be
+maintained here as implementation is verified.
+
+Ubuntu-24.04 was installed and verified as WSL2 on 2026-09-20 alongside Docker
+Desktop. No reboot was requested. Linux account creation is complete. Launch it:
+
+```powershell
+wsl -d Ubuntu-24.04
+```
+
+On a fresh setup, create the Linux username/password locally; never put passwords
+or OAuth secrets in chat. Then verify the distribution with `wsl --list --verbose`
+and, inside Ubuntu, `cat /etc/os-release`, `ps -p 1 -o comm=`, and
+`python3 --version`. LXD discovery and storage feasibility must precede
+initialization or container tests. Do not use Docker Desktop's internal distro
+for this project or reinitialize existing LXD storage.
+
+For a fresh machine, first run `wsl --install -d Ubuntu-24.04 --no-launch`;
+administrator privileges and a reboot may be required if Windows requests them.
+The remaining steps are pending, not a successful setup rehearsal. Use a Linux
+filesystem checkout for development after Ubuntu is ready; the current checkout
+is in Windows OneDrive. Keep credentials in ignored `.env` files or protected
+Linux configuration outside Git; `.env.example` remains tracked.
+
+Reference: [Microsoft WSL installation guidance](https://learn.microsoft.com/en-us/windows/wsl/install).
+
+Current Linux checks: systemd running, Python 3.12.3, Linux Node 24.21.0, and
+Astro 7.3.3 build verified. LXD 5.21.7 installed but CLI startup is blocked by a
+Snap mount namespace issue; Ubuntu-only restart is pending. Do not initialize
+storage until discovery works. [Sprint 0 evidence](docs/sprint0-evidence.md) and
+[probe instructions](scripts/sprint0/README.md) document reproducible checks.
+TinyFlux probes selected hourly UTC partitions to reduce measured per-file
+memory use; no production collector or API exists yet.
+
 **Contact:** dev@roboticgen.co
 
 ---

@@ -13,6 +13,7 @@ from hsm.api.containers import ContainerResource, ContainersResource
 from hsm.api.me import MeResource, MyQuotaResource
 from hsm.api.host import HostCapacityResource
 from hsm.lxd.discovery import LxdDiscovery
+from hsm.lxd.creation import LxdCreator
 from hsm.lxd.capacity import CapacityService
 from hsm.authz.access import require_container_access
 from hsm.db import connect
@@ -107,18 +108,20 @@ def create_app(settings: Settings) -> falcon.App:
     registry.add_route(app, "/api/users/{user_id}/containers/{container_id}", AssignmentResource(settings.database_path), {
         "PUT": Policy.ADMIN, "DELETE": Policy.ADMIN,
     })
-    registry.add_route(app, "/api/containers", ContainersResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
-    registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path), {
-        "GET": Policy.CONTAINER_ACCESS,
-    })
-    registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
-    registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     from pylxd import Client
     capacity = CapacityService(
         settings.database_path,
         LxdDiscovery(Client, settings.lxd_timeout_seconds),
         settings.lxd_create_project,
     )
+    registry.add_route(app, "/api/containers", ContainersResource(
+        settings.database_path, capacity, LxdCreator(Client, settings.lxd_timeout_seconds),
+    ), {"GET": Policy.AUTHENTICATED, "POST": Policy.ADMIN})
+    registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path), {
+        "GET": Policy.CONTAINER_ACCESS,
+    })
+    registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
+    registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})
     app.req_options.auto_parse_form_urlencoded = False
     return app

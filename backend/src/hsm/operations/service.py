@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json, uuid
 from hsm.db import connect
+from hsm.quota import quota_for_user, usage_for_user, Allocation
+from hsm.quota.service import require_within_quota
 
 @dataclass(frozen=True)
 class Reservation:
@@ -23,6 +25,11 @@ class OperationService:
                 if prior[1] != request_hash: raise OperationConflict("idempotency key was used with different input")
                 connection.commit(); return prior[0], False
             operation_id=str(uuid.uuid4()); now=_now()
+            for item in reservations:
+                if item.scope == "user":
+                    existing = connection.execute("SELECT COALESCE(SUM(delta_ram_bytes),0),COALESCE(SUM(delta_cpu_cores),0),COALESCE(SUM(delta_disk_bytes),0) FROM allocation_reservations WHERE user_id=?", (actor_id,)).fetchone()
+                    usage = usage_for_user(connection, actor_id)
+                    require_within_quota(usage, quota_for_user(connection, actor_id), Allocation(item.ram_bytes + existing[0], item.cpu_cores + existing[1], item.disk_bytes + existing[2]))
             connection.execute("INSERT INTO operations(id,actor_user_id,kind,target_id,request_hash,idempotency_key,status,created_at) VALUES(?,?,?,?,?,?, 'pending',?)",(operation_id,actor_id,kind,target_id,request_hash,idempotency_key,now))
             connection.execute("INSERT INTO audit_log(ts,actor_user_id,action,target_type,target_id,detail_json,outcome) VALUES(?,?,?,?,?,?, 'intent')",(now,actor_id,kind,"container",target_id,json.dumps({"request_hash":request_hash})))
             for item in reservations:

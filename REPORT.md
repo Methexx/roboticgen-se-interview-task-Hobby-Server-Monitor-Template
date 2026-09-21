@@ -95,6 +95,16 @@ uses an ignored Ubuntu virtual environment with the project source on
 any mutation of LXD resources remain unimplemented.
 
 Baseline commit: `e117407`. No application source or functional tests exist yet.
+## Sprint 1 — collector boundary skeleton
+
+Added a separate collector module and one-shot entry point. It has no LXD
+client, no scheduler, and no destructive behavior. Its SQLite-only heartbeat
+records that the process is idle; its latest-snapshot path upserts supplied data
+only for an existing stable inventory ID, where the database foreign key
+enforces that boundary. Two focused tests passed without accessing LXD or any
+preserved test container. Continuous polling, TinyFlux writes, recovery, and
+service installation are still unimplemented.
+
 The original backend and dashboard placeholders were inspected and retained.
 All required application workflows remain NOT VERIFIED; no later sprint started.
 

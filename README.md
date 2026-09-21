@@ -56,6 +56,12 @@ history jobs, and audit records. Migrations are ordered, recorded, idempotent,
 and executed with foreign-key enforcement on each connection. No login,
 collection, or LXD mutation has been demonstrated.
 
+The independent collector skeleton currently has no LXD client and starts no
+continuous loop. Its one-shot service process writes a SQLite heartbeat and can
+upsert an explicitly supplied latest snapshot for an existing stable inventory
+ID. This establishes the API/collector process boundary without touching the
+preserved LXD test resources or claiming collection works.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

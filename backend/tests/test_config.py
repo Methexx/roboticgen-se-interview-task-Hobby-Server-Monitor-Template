@@ -18,6 +18,7 @@ class LoadSettingsTests(unittest.TestCase):
         settings = load_settings(valid_environment())
         self.assertEqual(settings.google_redirect_uri, "http://localhost:8000/auth/callback")
         self.assertEqual(settings.collector_interval_seconds, 10)
+        self.assertEqual(settings.session_idle_seconds, 1800)
         self.assertFalse(settings.cookie_secure)
 
     def test_rejects_non_loopback_http(self) -> None:
@@ -27,5 +28,12 @@ class LoadSettingsTests(unittest.TestCase):
 
     def test_rejects_collector_cadence_change(self) -> None:
         environment = valid_environment() | {"COLLECTOR_INTERVAL_SECONDS": "11"}
+        with self.assertRaises(ConfigurationError):
+            load_settings(environment)
+
+    def test_rejects_idle_session_longer_than_absolute_expiry(self) -> None:
+        environment = valid_environment() | {
+            "SESSION_IDLE_SECONDS": "3600", "SESSION_ABSOLUTE_SECONDS": "60"
+        }
         with self.assertRaises(ConfigurationError):
             load_settings(environment)

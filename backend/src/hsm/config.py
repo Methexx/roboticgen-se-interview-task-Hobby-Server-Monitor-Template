@@ -32,6 +32,8 @@ class Settings:
     metrics_retention_days: int
     metrics_max_bytes: int
     cookie_secure: bool
+    session_idle_seconds: int
+    session_absolute_seconds: int
 
 
 def _required(env: dict[str, str], key: str) -> str:
@@ -94,6 +96,10 @@ def load_settings(environment: dict[str, str] | None = None) -> Settings:
     stale_seconds = _positive_int(env, "COLLECTOR_STALE_SECONDS", 30)
     if stale_seconds < collector_interval:
         raise ConfigurationError("COLLECTOR_STALE_SECONDS must be at least the collection interval")
+    session_idle = _positive_int(env, "SESSION_IDLE_SECONDS", 1800)
+    session_absolute = _positive_int(env, "SESSION_ABSOLUTE_SECONDS", 28800)
+    if session_idle > session_absolute:
+        raise ConfigurationError("SESSION_IDLE_SECONDS must not exceed SESSION_ABSOLUTE_SECONDS")
     return Settings(
         public_base_url=public_base_url,
         bind_host=env.get("BIND_HOST", "127.0.0.1"),
@@ -113,4 +119,6 @@ def load_settings(environment: dict[str, str] | None = None) -> Settings:
         metrics_retention_days=_positive_int(env, "METRICS_RETENTION_DAYS", 7),
         metrics_max_bytes=_positive_int(env, "METRICS_MAX_BYTES", 268435456),
         cookie_secure=cookie_secure,
+        session_idle_seconds=session_idle,
+        session_absolute_seconds=session_absolute,
     )

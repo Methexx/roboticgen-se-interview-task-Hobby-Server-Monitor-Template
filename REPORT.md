@@ -135,6 +135,15 @@ but unassigned ID returns 403 for a Container User. Twenty focused backend
 tests pass. No authenticated HTTP endpoint, OAuth login, LXD mutation, or
 browser user-management flow is claimed complete yet.
 
+## Sprint 2 — opaque session foundation
+
+Added opaque random browser tokens stored as SHA-256 digests, with configured
+idle and absolute expiry. Protected policy routes resolve only active users,
+which makes a revoked user’s next request fail even if a cookie remains in the
+browser. Focused tests cover digest-only persistence, expiry deletion, revoked
+session rejection, and anonymous/non-admin denial at middleware. OAuth has not
+yet issued these sessions, and no login/browser flow is claimed.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

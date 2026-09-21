@@ -6,17 +6,25 @@ import uuid
 
 import falcon
 
+from hsm.auth.sessions import SessionService
 from hsm.authz.policy import Policy, PolicyRegistry
 from hsm.config import Settings
 
 
 class RequestContextMiddleware:
-    def __init__(self, registry: PolicyRegistry) -> None:
+    def __init__(self, registry: PolicyRegistry, sessions: SessionService) -> None:
         self._registry = registry
+        self._sessions = sessions
 
     def process_request(self, request: falcon.Request, response: falcon.Response) -> None:
         request.context.request_id = str(uuid.uuid4())
         request.context.policy = self._registry.authorize(request)
+        request.context.user = self._sessions.resolve(request.get_cookie_values("hsm_session")[0]
+                                                      if request.get_cookie_values("hsm_session") else None)
+        if request.context.policy != Policy.PUBLIC and request.context.user is None:
+            raise falcon.HTTPUnauthorized(description="An active session is required")
+        if request.context.policy == Policy.ADMIN and request.context.user.role != "admin":
+            raise falcon.HTTPForbidden(description="Administrator access is required")
 
     def process_response(
         self,
@@ -63,12 +71,14 @@ class HealthResource:
 def create_app(settings: Settings) -> falcon.App:
     """Create an API that accepts only explicitly declared request methods."""
     registry = PolicyRegistry()
-    app = falcon.App(middleware=[RequestContextMiddleware(registry)])
+    sessions = SessionService(
+        settings.database_path,
+        idle_seconds=settings.session_idle_seconds,
+        absolute_seconds=settings.session_absolute_seconds,
+    )
+    app = falcon.App(middleware=[RequestContextMiddleware(registry, sessions)])
     app.add_error_handler(falcon.HTTPError, _http_error)
     app.add_error_handler(Exception, _unexpected_error)
     registry.add_route(app, "/healthz", HealthResource(), {"GET": Policy.PUBLIC})
     app.req_options.auto_parse_form_urlencoded = False
-    # Settings are injected at construction. Future resources receive the
-    # dependencies they need explicitly instead of relying on mutable globals.
-    del settings
     return app

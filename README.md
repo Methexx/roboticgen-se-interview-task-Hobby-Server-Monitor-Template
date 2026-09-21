@@ -75,6 +75,11 @@ unassigned container ID is forbidden. These services are verified against
 temporary SQLite databases but are not yet HTTP endpoints or a demonstrated
 browser workflow.
 
+Opaque browser-session handling now stores only SHA-256 token digests and
+requires an active user on protected route policies. Sessions enforce idle and
+absolute expiry; user revocation takes effect on the next request. Google OAuth
+does not create sessions until its callback is implemented and tested.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

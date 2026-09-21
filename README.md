@@ -68,6 +68,13 @@ empty, stale, and error states selected with `?state=loading|empty|stale|error`.
 It does not claim an authenticated session or live inventory; those states are
 ready for the later SQLite snapshot API.
 
+The Sprint 2 domain layer now enforces invitation normalization, active-admin
+protection, revocation cleanup, configured allocation quotas, and stable-ID
+container access. A Container User needs an explicit assignment; an existing
+unassigned container ID is forbidden. These services are verified against
+temporary SQLite databases but are not yet HTTP endpoints or a demonstrated
+browser workflow.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

@@ -122,6 +122,19 @@ symlink, then the symlink was removed. The committed lockfile was regenerated
 offline from that same pinned dependency set. This is a local filesystem
 performance limitation, not evidence of a clean frontend installation.
 
+## Sprint 2 — user, quota, and stable-ID access domain layer
+
+Implemented the SQLite domain services behind later user and container APIs.
+They normalize invitations, protect the last active admin from demotion or
+revocation, delete sessions and assignments on revocation, and charge the
+distinct set of containers a user owns or is assigned. Assignment, ownership
+transfer, quota reduction, and prospective limit increases validate the
+configured allocation rather than telemetry. Stable application container IDs
+are resolved centrally before any future LXD project/name lookup; an existing
+but unassigned ID returns 403 for a Container User. Twenty focused backend
+tests pass. No authenticated HTTP endpoint, OAuth login, LXD mutation, or
+browser user-management flow is claimed complete yet.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

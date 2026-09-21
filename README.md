@@ -96,6 +96,12 @@ allocated resources, and remaining budget through `/api/me` and `/api/me/quota`.
 The latter currently reports no pending reservations because creation operations
 have not been implemented.
 
+The Astro role flows now include an Admin Users page for invitation, role/quota
+changes, revocation confirmation, and assignment management, plus a Container
+User dashboard that calls the authenticated SQLite APIs. It renders loading,
+empty, forbidden, expired-session, stale/partial, and API-error messages. Real
+browser login and a live API deployment remain unverified.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

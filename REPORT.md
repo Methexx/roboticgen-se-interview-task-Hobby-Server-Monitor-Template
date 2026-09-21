@@ -173,6 +173,16 @@ reserved amount is currently zero because creation operations and durable
 reservations are not implemented. One focused API check and the 32-test backend
 suite passed.
 
+## Sprint 2 — Astro role flows
+
+Added a same-origin frontend API client, an Admin Users page, and a Container
+User dashboard. The Users page delegates invitation, role/quota changes,
+revocation confirmation, and assignment changes to the API. The dashboard
+displays server-calculated quota data and assigned-only snapshots with loading,
+empty, forbidden, expired-session, stale/partial, and API-error states. Astro
+built all three static routes. Browser login and a live API/browser rehearsal
+remain unverified.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

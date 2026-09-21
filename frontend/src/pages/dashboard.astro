@@ -1,36 +1,24 @@
 ---
 import Base from "../layouts/Base.astro";
-
-const states = {
-  loading: ["Loading inventory", "Waiting for the authenticated snapshot API."],
-  empty: ["No containers yet", "Create or discover a container to populate this dashboard."],
-  stale: ["Snapshot is stale", "Showing the last saved data while the collector is unavailable."],
-  error: ["Dashboard unavailable", "The snapshot API returned an error. Retry after checking service status."],
-} as const;
-type State = keyof typeof states;
 ---
-
 <Base title="Dashboard">
-  <header>
-    <p class="muted">Authenticated dashboard placeholder</p>
-    <h1>Container inventory</h1>
-  </header>
-  {Object.entries(states).map(([state, [heading, detail]]) => (
-    <section class="card state" aria-live="polite" data-dashboard-state={state} hidden={state !== "loading"}>
-      <h2>{heading}</h2>
-      <p>{detail}</p>
-    </section>
-  ))}
-  <nav aria-label="Preview dashboard state">
-    {Object.keys(states).map((name) => <a href={`/dashboard?state=${name}`}>{name}</a>)}
-  </nav>
-  <p><a href="/">Back to sign in</a></p>
+  <p class="muted">Container User dashboard</p><h1>My containers</h1>
+  <p id="dashboard-state" class="state" aria-live="polite">Loading snapshots…</p>
+  <section id="quota" class="card" hidden><h2>My budget</h2><p></p></section>
+  <section class="card"><h2>Assigned containers</h2><div id="containers"></div></section>
+  <p><a href="/users">Manage users</a> (admins only)</p>
   <script>
-    const allowed = new Set(["loading", "empty", "stale", "error"]);
-    const requested = new URLSearchParams(window.location.search).get("state");
-    const selected = requested && allowed.has(requested) ? requested : "loading";
-    document.querySelectorAll<HTMLElement>("[data-dashboard-state]").forEach((element) => {
-      element.hidden = element.dataset.dashboardState !== selected;
-    });
+    import { api, ApiError } from "../lib/api";
+    const state = document.querySelector<HTMLElement>("#dashboard-state")!;
+    const quota = document.querySelector<HTMLElement>("#quota")!;
+    const list = document.querySelector<HTMLElement>("#containers")!;
+    async function load() { try {
+      const [budget, containers] = await Promise.all([api<any>("/api/me/quota"), api<{items:any[]}>("/api/containers")]);
+      quota.hidden = false; quota.querySelector("p")!.textContent = `Quota ${JSON.stringify(budget.quota)}; allocated ${JSON.stringify(budget.allocated)}; remaining ${JSON.stringify(budget.remaining)}`;
+      if (!containers.items.length) { state.textContent = "No containers are assigned to you."; return; }
+      state.textContent = containers.items.some((item) => item.error_code) ? "Snapshot may be stale or partial." : "";
+      list.replaceChildren(...containers.items.map((item) => { const article = document.createElement("article"); article.className = "card"; article.textContent = `${item.name} (${item.project}) — ${item.state ?? "No snapshot"}`; return article; }));
+    } catch (error) { state.textContent = error instanceof ApiError && error.status === 401 ? "Session expired. Sign in again." : error instanceof ApiError && error.status === 403 ? "Forbidden: you do not have access." : "The snapshot API is unavailable. Try again later."; } }
+    load();
   </script>
 </Base>

@@ -192,6 +192,14 @@ unavailable responses. A live read-only probe saw the three preserved projects
 and their expected test instances. Capacity API exposure, SQLite reconciliation,
 and every container mutation remain pending.
 
+## Sprint 3 — durable operation intents
+
+Added SQLite operation intent/outcome records, actor-scoped idempotency, audit
+intent rows, and allocation reservations. A same-key/same-input retry returns
+the original operation; a changed body conflicts. Successful or failed outcomes
+release reservations while unknown outcomes retain them for reconciliation. One
+focused test passed; no LXD call is wired to this service yet.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

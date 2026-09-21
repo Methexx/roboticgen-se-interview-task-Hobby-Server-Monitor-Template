@@ -107,6 +107,10 @@ LXD UUID and reports partial-project failures without deleting SQLite state. A
 live probe observed `default`, `hsm`, and `hsm-observe`; capacity API exposure
 and inventory reconciliation are still pending.
 
+Operation intents, actor-scoped idempotency keys, audit intents, and allocation
+reservations are now persisted before future LXD mutation work. Unknown outcomes
+retain reservations for later reconciliation; no LXD mutation has been wired.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

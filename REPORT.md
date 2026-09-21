@@ -200,6 +200,13 @@ the original operation; a changed body conflicts. Successful or failed outcomes
 release reservations while unknown outcomes retain them for reconciliation. One
 focused test passed; no LXD call is wired to this service yet.
 
+## Sprint 3 — safe capacity/reconciliation slice
+
+Added admin capacity discovery and SQLite reconciliation. Complete inventory
+upserts stable project/UUID records; partial inventory is explicit and never
+deletes prior inventory or assignments. The capacity response is infeasible when
+safe discovery is incomplete. One focused test and the 36-test suite passed.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

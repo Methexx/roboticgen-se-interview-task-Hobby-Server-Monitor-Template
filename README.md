@@ -111,6 +111,10 @@ Operation intents, actor-scoped idempotency keys, audit intents, and allocation
 reservations are now persisted before future LXD mutation work. Unknown outcomes
 retain reservations for later reconciliation; no LXD mutation has been wired.
 
+`GET /api/host/capacity` is admin-only and returns a safe infeasible state when
+inventory is partial. Complete discovery reconciles stable project/UUID identity
+into SQLite without deleting inventory or assignments.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

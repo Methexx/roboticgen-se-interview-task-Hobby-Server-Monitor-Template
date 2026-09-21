@@ -11,6 +11,9 @@ from hsm.auth.sessions import SessionService
 from hsm.api.users import AssignmentResource, UserResource, UsersResource
 from hsm.api.containers import ContainerResource, ContainersResource
 from hsm.api.me import MeResource, MyQuotaResource
+from hsm.api.host import HostCapacityResource
+from hsm.lxd.discovery import LxdDiscovery
+from hsm.lxd.capacity import CapacityService
 from hsm.authz.access import require_container_access
 from hsm.db import connect
 from hsm.authz.policy import Policy, PolicyRegistry
@@ -110,5 +113,8 @@ def create_app(settings: Settings) -> falcon.App:
     })
     registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
+    from pylxd import Client
+    capacity = CapacityService(settings.database_path, LxdDiscovery(Client, settings.lxd_timeout_seconds))
+    registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})
     app.req_options.auto_parse_form_urlencoded = False
     return app

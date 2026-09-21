@@ -40,6 +40,14 @@ The real 4 GiB container disk quota was verified. [Sprint 0 evidence](docs/sprin
 TinyFlux probes selected hourly UTC partitions to reduce measured per-file
 memory use; no production collector or API exists yet.
 
+### Sprint 1 status
+
+The initial Falcon API now exposes only `GET /healthz`. Every registered route
+and HTTP method must have an explicit policy; undeclared paths are denied and an
+undeclared method receives a structured 405 response. Each response receives a
+server-generated `X-Request-ID`. Authentication, OAuth callbacks, inventory,
+and collection remain unimplemented at this point.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

@@ -57,6 +57,22 @@ library warnings, limitations, and the known test-resource names. Sprint 0
 continues with configuration/migration and OAuth feasibility; no later sprint
 workflow is claimed complete.
 
+## Sprint 1 — HTTP foundation
+
+Implemented the Falcon application factory, request IDs, JSON errors, and an
+explicit route-and-method policy registry. `GET /healthz` is the only declared
+public endpoint. A missing path is denied with a structured 404 response, and
+an undeclared method on a declared path returns structured 405. The registry
+rejects startup when a responder lacks a declared policy.
+
+Nine focused tests passed for health access, default-deny behavior, policy
+coverage, configuration, and migration. The first Falcon implementation used a
+nonexistent application `context` field; focused tests exposed it, so settings
+remain constructor-injected until resources need explicit dependencies. Error
+codes initially included Falcon's numeric prefix and were normalized to the API
+contract. No OAuth, session, container, collector, or browser workflow is
+claimed implemented.
+
 ## Sprint 0 evidence — 2026-09-20 (in progress)
 
 Baseline commit: `e117407`. No application source or functional tests exist yet.

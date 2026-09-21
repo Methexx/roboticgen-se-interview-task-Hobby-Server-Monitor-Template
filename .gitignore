@@ -26,3 +26,6 @@ __pycache__/
 node_modules/
 .astro/
 dist/
+
+# Editable-install metadata is generated from backend/pyproject.toml.
+/backend/src/*.egg-info/

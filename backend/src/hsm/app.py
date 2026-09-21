@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 import falcon
 
 from hsm.auth.sessions import SessionService
 from hsm.api.users import AssignmentResource, UserResource, UsersResource
+from hsm.api.containers import ContainerResource, ContainersResource
+from hsm.authz.access import require_container_access
+from hsm.db import connect
 from hsm.authz.policy import Policy, PolicyRegistry
 from hsm.config import Settings
 
 
 class RequestContextMiddleware:
-    def __init__(self, registry: PolicyRegistry, sessions: SessionService) -> None:
+    def __init__(self, registry: PolicyRegistry, sessions: SessionService, database_path: Path) -> None:
         self._registry = registry
         self._sessions = sessions
+        self._database_path = database_path
 
     def process_request(self, request: falcon.Request, response: falcon.Response) -> None:
         request.context.request_id = str(uuid.uuid4())
@@ -26,6 +31,14 @@ class RequestContextMiddleware:
             raise falcon.HTTPUnauthorized(description="An active session is required")
         if request.context.policy == Policy.ADMIN and request.context.user.role != "admin":
             raise falcon.HTTPForbidden(description="Administrator access is required")
+        if request.context.policy == Policy.CONTAINER_ACCESS:
+            connection = connect(self._database_path)
+            try:
+                require_container_access(
+                    connection, request.context.user.id, request.context.route_params["container_id"]
+                )
+            finally:
+                connection.close()
 
     def process_response(
         self,
@@ -77,7 +90,7 @@ def create_app(settings: Settings) -> falcon.App:
         idle_seconds=settings.session_idle_seconds,
         absolute_seconds=settings.session_absolute_seconds,
     )
-    app = falcon.App(middleware=[RequestContextMiddleware(registry, sessions)])
+    app = falcon.App(middleware=[RequestContextMiddleware(registry, sessions, settings.database_path)])
     app.add_error_handler(falcon.HTTPError, _http_error)
     app.add_error_handler(Exception, _unexpected_error)
     registry.add_route(app, "/healthz", HealthResource(), {"GET": Policy.PUBLIC})
@@ -89,6 +102,10 @@ def create_app(settings: Settings) -> falcon.App:
     })
     registry.add_route(app, "/api/users/{user_id}/containers/{container_id}", AssignmentResource(settings.database_path), {
         "PUT": Policy.ADMIN, "DELETE": Policy.ADMIN,
+    })
+    registry.add_route(app, "/api/containers", ContainersResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
+    registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path), {
+        "GET": Policy.CONTAINER_ACCESS,
     })
     app.req_options.auto_parse_form_urlencoded = False
     return app

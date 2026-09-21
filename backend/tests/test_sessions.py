@@ -76,7 +76,7 @@ class SessionServiceTests(unittest.TestCase):
             connection.close()
         token = self.sessions.create(2, now=self.now)
         registry = PolicyRegistry()
-        app = falcon.App(middleware=[RequestContextMiddleware(registry, self.sessions)])
+        app = falcon.App(middleware=[RequestContextMiddleware(registry, self.sessions, self.database)])
         registry.add_route(app, "/admin", _AdminResource(), {"GET": Policy.ADMIN})
         client = falcon.testing.TestClient(app)
         self.assertEqual(client.simulate_get("/admin").status_code, 401)

@@ -28,7 +28,7 @@ class ApplicationTests(unittest.TestCase):
         self.assertRegex(response.headers["x-request-id"], r"^[0-9a-f-]{36}$")
 
     def test_undeclared_path_is_denied_with_structured_error(self) -> None:
-        response = self.client.simulate_get("/api/containers")
+        response = self.client.simulate_get("/api/not-registered")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json["error"]["code"], "not_found")
         self.assertIn("request_id", response.json)

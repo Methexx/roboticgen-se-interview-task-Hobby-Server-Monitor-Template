@@ -85,6 +85,12 @@ revoke users, and add or remove container assignments. They reject unknown JSON
 fields and are protected by the explicit policy registry. The browser pages and
 OAuth callback are not wired to these endpoints yet.
 
+Authenticated container-list and detail endpoints read the latest SQLite
+snapshots only. Administrators can list the current inventory; Container Users
+receive only explicit assignments, and the central stable-ID check rejects an
+existing unassigned container with 403 before it is resolved further. These are
+not LXD polling endpoints.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

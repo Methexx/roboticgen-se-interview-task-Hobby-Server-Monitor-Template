@@ -155,6 +155,15 @@ parameters to responders; accepting those parameters fixed an unintended 500
 and produced the expected 409. These endpoints do not yet have browser controls
 or OAuth-created sessions.
 
+## Sprint 2 — assigned-only snapshot reads
+
+Added authenticated container list/detail endpoints backed solely by SQLite
+inventory and `metrics_latest`. Admins receive all present inventory; Container
+Users receive only explicit assignments. The `CONTAINER_ACCESS` policy invokes
+the central stable-ID resolver in middleware, so an existing unassigned ID
+returns 403 before the resource queries snapshot data. Two focused HTTP tests
+pass. No API/browser request polls LXD for metrics.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

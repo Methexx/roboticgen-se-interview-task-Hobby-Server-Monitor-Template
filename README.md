@@ -102,6 +102,11 @@ User dashboard that calls the authenticated SQLite APIs. It renders loading,
 empty, forbidden, expired-session, stale/partial, and API-error messages. Real
 browser login and a live API deployment remain unverified.
 
+Read-only LXD discovery now enumerates project-scoped instances by project plus
+LXD UUID and reports partial-project failures without deleting SQLite state. A
+live probe observed `default`, `hsm`, and `hsm-observe`; capacity API exposure
+and inventory reconciliation are still pending.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

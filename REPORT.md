@@ -183,6 +183,15 @@ empty, forbidden, expired-session, stale/partial, and API-error states. Astro
 built all three static routes. Browser login and a live API/browser rehearsal
 remain unverified.
 
+## Sprint 3 — read-only discovery wrapper
+
+Added a project-aware pylxd wrapper with no mutation methods. It enumerates all
+projects and instance UUIDs, reports per-project failures explicitly, and maps
+root discovery failure into a safe typed error. Mock tests cover partial and
+unavailable responses. A live read-only probe saw the three preserved projects
+and their expected test instances. Capacity API exposure, SQLite reconciliation,
+and every container mutation remain pending.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

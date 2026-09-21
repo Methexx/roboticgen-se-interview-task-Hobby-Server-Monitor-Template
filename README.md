@@ -91,6 +91,11 @@ receive only explicit assignments, and the central stable-ID check rejects an
 existing unassigned container with 403 before it is resolved further. These are
 not LXD polling endpoints.
 
+Authenticated callers can now read their server-calculated identity, quota,
+allocated resources, and remaining budget through `/api/me` and `/api/me/quota`.
+The latter currently reports no pending reservations because creation operations
+have not been implemented.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

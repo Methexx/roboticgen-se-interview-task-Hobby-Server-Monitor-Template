@@ -39,6 +39,12 @@ class ContainersApiTests(unittest.TestCase):
                     (NOW,),
                 )
                 connection.execute(
+                    """INSERT INTO container_allocations (
+                        container_id, ram_bytes, cpu_cores, disk_bytes, verified_at
+                    ) VALUES ('container-a', 1, 1, 2, ?)""",
+                    (NOW,),
+                )
+                connection.execute(
                     """INSERT INTO metrics_latest(container_id, state, ipv4_json, sampled_at)
                        VALUES ('container-a', 'Running', '["10.70.0.2"]', ?)""",
                     (NOW,),
@@ -68,3 +74,9 @@ class ContainersApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         response = self.client.simulate_get("/api/containers/container-b", cookies={"hsm_session": self.admin_token})
         self.assertEqual(response.status_code, 200)
+
+    def test_me_quota_comes_from_server_calculated_allocations(self) -> None:
+        response = self.client.simulate_get("/api/me/quota", cookies={"hsm_session": self.user_token})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["quota"], {"ram_bytes": 8, "cpu_cores": 4, "disk_bytes": 16})
+        self.assertEqual(response.json["allocated"], {"ram_bytes": 1, "cpu_cores": 1, "disk_bytes": 2})

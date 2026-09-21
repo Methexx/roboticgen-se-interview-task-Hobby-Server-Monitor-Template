@@ -164,6 +164,15 @@ the central stable-ID resolver in middleware, so an existing unassigned ID
 returns 403 before the resource queries snapshot data. Two focused HTTP tests
 pass. No API/browser request polls LXD for metrics.
 
+## Sprint 2 — identity and quota API
+
+Added authenticated `/api/me` and `/api/me/quota` endpoints for the browser
+role flows. Quota, allocated amount, and remaining budget are calculated on the
+server from configured allocations; the client does not recalculate them. The
+reserved amount is currently zero because creation operations and durable
+reservations are not implemented. One focused API check and the 32-test backend
+suite passed.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

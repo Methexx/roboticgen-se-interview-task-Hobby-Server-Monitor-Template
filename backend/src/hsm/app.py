@@ -10,6 +10,7 @@ import falcon
 from hsm.auth.sessions import SessionService
 from hsm.api.users import AssignmentResource, UserResource, UsersResource
 from hsm.api.containers import ContainerResource, ContainersResource
+from hsm.api.me import MeResource, MyQuotaResource
 from hsm.authz.access import require_container_access
 from hsm.db import connect
 from hsm.authz.policy import Policy, PolicyRegistry
@@ -107,5 +108,7 @@ def create_app(settings: Settings) -> falcon.App:
     registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path), {
         "GET": Policy.CONTAINER_ACCESS,
     })
+    registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
+    registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     app.req_options.auto_parse_form_urlencoded = False
     return app

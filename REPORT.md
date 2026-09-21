@@ -105,6 +105,23 @@ enforces that boundary. Two focused tests passed without accessing LXD or any
 preserved test container. Continuous polling, TinyFlux writes, recovery, and
 service installation are still unimplemented.
 
+## Sprint 1 — Astro browser state slice
+
+Replaced the template dashboard placeholder with a pinned Astro 7.3.3 static
+application. It builds a sign-in page and a dashboard placeholder with explicit
+loading, empty, stale, and error states; `?state=` selects each state in the
+browser. It has no API call, session, OAuth redirect handler, or claim of an
+authenticated user. Ubuntu Node 24.21.0 was restored from the official archive
+after read-only discovery found only the Windows npm shim. The archive checksum
+matched its published SHA-256. Astro built two static pages successfully.
+
+An offline `npm ci` attempt against the OneDrive checkout exceeded a 55-second
+cap while extracting cached packages and was terminated. The build therefore
+used the already verified Sprint 0 Astro dependency tree through a local ignored
+symlink, then the symlink was removed. The committed lockfile was regenerated
+offline from that same pinned dependency set. This is a local filesystem
+performance limitation, not evidence of a clean frontend installation.
+
 The original backend and dashboard placeholders were inspected and retained.
 All required application workflows remain NOT VERIFIED; no later sprint started.
 

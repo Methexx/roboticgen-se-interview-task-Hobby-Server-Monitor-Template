@@ -62,6 +62,12 @@ upsert an explicitly supplied latest snapshot for an existing stable inventory
 ID. This establishes the API/collector process boundary without touching the
 preserved LXD test resources or claiming collection works.
 
+The first Astro browser slice provides a static sign-in page and an
+authenticated-dashboard placeholder. The dashboard explicitly renders loading,
+empty, stale, and error states selected with `?state=loading|empty|stale|error`.
+It does not claim an authenticated session or live inventory; those states are
+ready for the later SQLite snapshot API.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

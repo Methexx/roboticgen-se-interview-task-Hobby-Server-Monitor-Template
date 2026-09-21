@@ -48,6 +48,14 @@ undeclared method receives a structured 405 response. Each response receives a
 server-generated `X-Request-ID`. Authentication, OAuth callbacks, inventory,
 and collection remain unimplemented at this point.
 
+SQLite migrations now advance an empty or existing version-1 database to the
+control-plane schema used by later work: identities and sessions, OAuth
+transactions, bootstrap settings, stable container inventory and assignments,
+latest snapshots, collector status, operation intents, quota reservations,
+history jobs, and audit records. Migrations are ordered, recorded, idempotent,
+and executed with foreign-key enforcement on each connection. No login,
+collection, or LXD mutation has been demonstrated.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

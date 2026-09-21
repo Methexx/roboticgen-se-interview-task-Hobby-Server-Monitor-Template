@@ -75,6 +75,25 @@ claimed implemented.
 
 ## Sprint 0 evidence — 2026-09-20 (in progress)
 
+## Sprint 1 — control-plane migrations
+
+Added append-only SQLite migrations for the application state required by the
+planned workflows: users, opaque sessions, browser-bound OAuth transactions,
+bootstrap settings, stable-ID containers and assignments, latest metrics,
+collector status, operation intents, quota reservations, history jobs, and
+audit records. Each connection enables foreign keys and receives a bounded busy
+timeout; each pending migration is applied under `BEGIN IMMEDIATE` and recorded
+only after its statements succeed. This gives a deterministic local schema
+upgrade path without claiming an atomic transaction with LXD.
+
+Ten focused tests passed in Ubuntu Python 3.12: the prior HTTP/configuration
+checks plus fresh-database idempotency and an upgrade from a deliberately
+created version-1 database. The host PowerShell Python 3.14 lacked the pinned
+dependencies and does not meet the declared interpreter range, so verification
+uses an ignored Ubuntu virtual environment with the project source on
+`PYTHONPATH`. OAuth, session handling, collector activity, browser login, and
+any mutation of LXD resources remain unimplemented.
+
 Baseline commit: `e117407`. No application source or functional tests exist yet.
 The original backend and dashboard placeholders were inspected and retained.
 All required application workflows remain NOT VERIFIED; no later sprint started.

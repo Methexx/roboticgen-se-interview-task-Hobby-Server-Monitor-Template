@@ -114,7 +114,11 @@ def create_app(settings: Settings) -> falcon.App:
     registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     from pylxd import Client
-    capacity = CapacityService(settings.database_path, LxdDiscovery(Client, settings.lxd_timeout_seconds))
+    capacity = CapacityService(
+        settings.database_path,
+        LxdDiscovery(Client, settings.lxd_timeout_seconds),
+        settings.lxd_create_project,
+    )
     registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})
     app.req_options.auto_parse_form_urlencoded = False
     return app

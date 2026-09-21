@@ -80,6 +80,11 @@ requires an active user on protected route policies. Sessions enforce idle and
 absolute expiry; user revocation takes effect on the next request. Google OAuth
 does not create sessions until its callback is implemented and tested.
 
+Admin-only JSON endpoints now list users, invite by email, change role/quota,
+revoke users, and add or remove container assignments. They reject unknown JSON
+fields and are protected by the explicit policy registry. The browser pages and
+OAuth callback are not wired to these endpoints yet.
+
 ### Google OAuth prerequisite
 
 Sprint 0 has not verified Google login or callback reachability because no API

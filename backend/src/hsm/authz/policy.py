@@ -67,10 +67,35 @@ class PolicyRegistry:
 
     def authorize(self, request: falcon.Request) -> Policy:
         method = request.method.upper()
-        policy = self._policies.get((request.path, method))
-        if policy is not None:
-            return policy
-        methods = self._paths.get(request.path)
+        exact = self._policies.get((request.path, method))
+        if exact is not None:
+            request.context.route_params = {}
+            return exact
+        matched_methods: set[str] = set()
+        for template, methods in self._paths.items():
+            params = _match_template(template, request.path)
+            if params is None:
+                continue
+            matched_methods.update(methods)
+            policy = self._policies.get((template, method))
+            if policy is not None:
+                request.context.route_params = params
+                return policy
+        methods = matched_methods
         if methods:
             raise falcon.HTTPMethodNotAllowed(allowed_methods=sorted(methods))
         raise falcon.HTTPNotFound()
+
+
+def _match_template(template: str, path: str) -> dict[str, str] | None:
+    template_parts = template.strip("/").split("/")
+    path_parts = path.strip("/").split("/")
+    if len(template_parts) != len(path_parts):
+        return None
+    params: dict[str, str] = {}
+    for expected, actual in zip(template_parts, path_parts, strict=True):
+        if expected.startswith("{") and expected.endswith("}"):
+            params[expected[1:-1]] = actual
+        elif expected != actual:
+            return None
+    return params

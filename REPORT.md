@@ -144,6 +144,17 @@ browser. Focused tests cover digest-only persistence, expiry deletion, revoked
 session rejection, and anonymous/non-admin denial at middleware. OAuth has not
 yet issued these sessions, and no login/browser flow is claimed.
 
+## Sprint 2 — admin user API
+
+Added policy-registered admin routes for listing, inviting, editing, revoking,
+assigning, and unassigning users. Bodies are JSON-only, bounded, and reject
+unknown fields. Focused HTTP tests demonstrate anonymous 401, non-admin 403,
+invite handling, assignment, session invalidation after revocation, and last
+admin conflict behavior. A first test exposed Falcon passing URI template
+parameters to responders; accepting those parameters fixed an unintended 500
+and produced the expected 409. These endpoints do not yet have browser controls
+or OAuth-created sessions.
+
 The original backend placeholder was inspected and retained. The dashboard
 placeholder was later replaced by the Sprint 1 Astro state slice described
 above.

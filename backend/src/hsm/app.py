@@ -7,6 +7,7 @@ import uuid
 import falcon
 
 from hsm.auth.sessions import SessionService
+from hsm.api.users import AssignmentResource, UserResource, UsersResource
 from hsm.authz.policy import Policy, PolicyRegistry
 from hsm.config import Settings
 
@@ -80,5 +81,14 @@ def create_app(settings: Settings) -> falcon.App:
     app.add_error_handler(falcon.HTTPError, _http_error)
     app.add_error_handler(Exception, _unexpected_error)
     registry.add_route(app, "/healthz", HealthResource(), {"GET": Policy.PUBLIC})
+    registry.add_route(app, "/api/users", UsersResource(settings.database_path), {
+        "GET": Policy.ADMIN, "POST": Policy.ADMIN,
+    })
+    registry.add_route(app, "/api/users/{user_id}", UserResource(settings.database_path), {
+        "PATCH": Policy.ADMIN, "DELETE": Policy.ADMIN,
+    })
+    registry.add_route(app, "/api/users/{user_id}/containers/{container_id}", AssignmentResource(settings.database_path), {
+        "PUT": Policy.ADMIN, "DELETE": Policy.ADMIN,
+    })
     app.req_options.auto_parse_form_urlencoded = False
     return app

@@ -113,11 +113,14 @@ class LxdDiscovery:
     def pools(self) -> list[Pool]:
         root = self._client()
         names = self._get(root, "storage_pools")
-        if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        if not isinstance(names, list):
             raise DiscoveryError("malformed", "Storage pool list is malformed")
         pools: list[Pool] = []
-        for name in names:
-            data = self._get(root, f"storage_pools/{name}")
+        for item in names:
+            name = item if isinstance(item, str) else item.get("name") if isinstance(item, dict) else None
+            if not isinstance(name, str):
+                raise DiscoveryError("malformed", "Storage pool list is malformed")
+            data = item if isinstance(item, dict) else self._get(root, f"storage_pools/{name}")
             if not isinstance(data, dict):
                 raise DiscoveryError("malformed", "Storage pool detail is malformed")
             space = data.get("resources", {}).get("space", {})
@@ -144,11 +147,14 @@ class LxdDiscovery:
     def networks(self) -> list[Network]:
         root = self._client()
         names = self._get(root, "networks")
-        if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        if not isinstance(names, list):
             raise DiscoveryError("malformed", "Network list is malformed")
         networks: list[Network] = []
-        for name in names:
-            data = self._get(root, f"networks/{name}")
+        for item in names:
+            name = item if isinstance(item, str) else item.get("name") if isinstance(item, dict) else None
+            if not isinstance(name, str):
+                raise DiscoveryError("malformed", "Network list is malformed")
+            data = item if isinstance(item, dict) else self._get(root, f"networks/{name}")
             config = data.get("config") if isinstance(data, dict) else None
             if not isinstance(config, dict):
                 raise DiscoveryError("malformed", "Network detail is malformed")
@@ -158,9 +164,15 @@ class LxdDiscovery:
     def profiles(self, project: str) -> list[Profile]:
         root = self._client(project)
         names = self._get(root, "profiles")
-        if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        if not isinstance(names, list):
             raise DiscoveryError("malformed", "Profile list is malformed")
-        return [self._profile(name, self._get(root, f"profiles/{name}")) for name in names]
+        profiles = []
+        for item in names:
+            name = item if isinstance(item, str) else item.get("name") if isinstance(item, dict) else None
+            if not isinstance(name, str):
+                raise DiscoveryError("malformed", "Profile list is malformed")
+            profiles.append(self._profile(name, item if isinstance(item, dict) else self._get(root, f"profiles/{name}")))
+        return profiles
 
     @staticmethod
     def _profile(name: str, data: Any) -> Profile:

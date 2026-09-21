@@ -64,6 +64,13 @@ class DiscoveryTests(unittest.TestCase):
             LxdDiscovery(client_for(routes), 3).pools()
         self.assertEqual(error.exception.kind, "malformed")
 
+    def test_expanded_collection_objects_are_supported(self):
+        routes = {(None, "storage_pools"): [{"name": "pool", "driver": "btrfs", "resources": {"space": {"total": 20, "used": 5}}}], (None, "networks"): [{"name": "br", "managed": True, "type": "bridge", "config": {}}], ("good", "profiles"): [{"name": "safe", "config": {}, "devices": {"root": {"type": "disk", "path": "/", "pool": "pool"}, "eth0": {"type": "nic", "network": "br"}}}]}
+        discovery = LxdDiscovery(client_for(routes), 3)
+        self.assertEqual(discovery.pools()[0].free_bytes, 15)
+        self.assertEqual(discovery.networks()[0].name, "br")
+        self.assertTrue(discovery.profiles("good")[0].safe)
+
     def test_unsafe_profile_is_not_approved(self):
         routes = {("good", "profiles"): ["unsafe"], ("good", "profiles/unsafe"): {"config": {"security.privileged": "true"}, "devices": {}}}
         profile = LxdDiscovery(client_for(routes), 3).profiles("good")[0]

@@ -122,7 +122,9 @@ symlink, then the symlink was removed. The committed lockfile was regenerated
 offline from that same pinned dependency set. This is a local filesystem
 performance limitation, not evidence of a clean frontend installation.
 
-The original backend and dashboard placeholders were inspected and retained.
+The original backend placeholder was inspected and retained. The dashboard
+placeholder was later replaced by the Sprint 1 Astro state slice described
+above.
 All required application workflows remain NOT VERIFIED; no later sprint started.
 
 Repository preparation:

@@ -180,8 +180,14 @@ class ContainerMutationResource:
         self._mutate(request, response, action)
 
     def on_delete(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
-        if request.content_type != "application/json" or request.media != {"confirm": True}:
-            raise falcon.HTTPBadRequest(description="Deletion requires confirm=true")
+        if request.content_type != "application/json" or not isinstance(request.media, dict) or set(request.media) != {"confirm_name"}:
+            raise falcon.HTTPBadRequest(description="Deletion requires confirm_name")
+        connection = connect(self._path)
+        try:
+            row = connection.execute("SELECT current_name FROM containers WHERE id=? AND lifecycle='present'", (request.context.route_params["container_id"],)).fetchone()
+        finally: connection.close()
+        if row is None or request.media["confirm_name"] != row[0]:
+            raise falcon.HTTPBadRequest(description="Deletion confirmation does not match the container name")
         self._mutate(request, response, "delete")
 
     def _mutate(self, request: falcon.Request, response: falcon.Response, action: str) -> None:
@@ -207,7 +213,9 @@ class ContainerMutationResource:
         connection=connect(self._path)
         try:
             with connection:
-                if action == "delete": connection.execute("UPDATE containers SET lifecycle='deleted',deleted_at=datetime('now') WHERE id=?", (identifier,))
+                if action == "delete":
+                    connection.execute("DELETE FROM container_assignments WHERE container_id=?", (identifier,))
+                    connection.execute("UPDATE containers SET lifecycle='deleted',deleted_at=datetime('now') WHERE id=?", (identifier,))
                 connection.execute("UPDATE operations SET status='succeeded',completed_at=datetime('now') WHERE id=?", (operation_id,))
                 connection.execute("INSERT INTO audit_log(ts,actor_user_id,action,target_type,target_id,target_name,operation_id,detail_json,outcome) VALUES(datetime('now'),?,?,?,?,?,?,?, 'ok')", (request.context.user.id, f"container.{action}", "container", identifier, row[1], operation_id, "{}"))
         finally: connection.close()

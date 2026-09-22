@@ -3,7 +3,7 @@ import Base from "../layouts/Base.astro";
 ---
 <Base title="Manage containers">
   <h1>Container management</h1>
-  <p id="state" aria-live="polite">Loading capacity…</p>
+  <p id="state" aria-live="polite">Loading capacityâ€¦</p>
   <form id="create" hidden><input name="name" required pattern="[a-z][a-z0-9-]{2,62}" placeholder="Container name" /><select name="image"></select><select name="profile"></select><input name="ram_bytes" type="number" required /><input name="cpu_cores" type="number" required /><input name="disk_bytes" type="number" required /><button>Create</button></form>
   <p id="error" role="alert"></p>
   <script>

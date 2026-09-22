@@ -1,0 +1,4 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Terminal"><h1>Container terminal</h1><p id="state">Choose an assigned running container. Commands run inside that container only.</p><form id="terminal"><input name="container_id" required placeholder="Container ID"/><input name="command" required maxlength="2048" placeholder="Command"/><button>Run</button></form><pre id="output"></pre><script>import {api,json,ApiError} from "../lib/api";const f=document.querySelector<HTMLFormElement>('#terminal')!,o=document.querySelector('#output')!,s=document.querySelector('#state')!;f.addEventListener('submit',async e=>{e.preventDefault();const d=new FormData(f);try{const r=await api<any>(`/api/containers/${d.get('container_id')}/terminal`,json('POST',{command:d.get('command')}));o.textContent=r.output??''}catch(e){s.textContent=e instanceof ApiError&&e.status===403?'Forbidden.':e instanceof ApiError?e.message:'Terminal unavailable.'}});</script></Base>

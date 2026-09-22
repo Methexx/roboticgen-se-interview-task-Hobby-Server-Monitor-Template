@@ -91,6 +91,7 @@ class Collector:
                         sampled_at = excluded.sampled_at, error_code = excluded.error_code""",
                     values,
                 )
+                connection.execute("INSERT OR REPLACE INTO metrics_history(container_id,sampled_at,state,cpu_pct,ram_used_bytes,disk_used_bytes,net_rx_bytes,net_tx_bytes) VALUES(?,?,?,?,?,?,?,?)", (snapshot.container_id,snapshot.sampled_at,snapshot.state,snapshot.cpu_pct,snapshot.ram_used_bytes,snapshot.disk_used_bytes,snapshot.net_rx_bytes,snapshot.net_tx_bytes))
         finally:
             connection.close()
         self._record_hourly(snapshot)

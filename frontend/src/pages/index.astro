@@ -1,0 +1,14 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Sign in">
+  <section class="card" aria-labelledby="sign-in-title">
+    <p class="muted">Hobby Server Monitor</p>
+    <h1 id="sign-in-title">Sign in</h1>
+    <p>Use your invited Google account to access the monitor.</p>
+    <p class="muted">Google sign-in is unavailable until local OAuth credentials and the callback are implemented.</p>
+    <p><a href="/auth/login" aria-disabled="true">Continue with Google</a></p>
+    <p><a href="/dashboard">View dashboard states</a></p>
+  </section>
+</Base>

@@ -1,0 +1,27 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title} | Hobby Server Monitor</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { margin: 0; background: Canvas; color: CanvasText; }
+      main { max-width: 48rem; margin: 4rem auto; padding: 0 1.25rem; }
+      .card { border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: .75rem; padding: 1.5rem; }
+      .muted { color: color-mix(in srgb, CanvasText 65%, Canvas); }
+      .state { border-left: .3rem solid currentColor; padding-left: 1rem; }
+      nav { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; }
+      a { color: LinkText; }
+    </style>
+  </head>
+  <body><main><slot /></main></body>
+</html>

@@ -1,5 +1,131 @@
 # Software Engineer Intern Task — Hobby Server Monitor
 
+## Implementation status — Sprint 0
+
+Repository preparation and environment discovery began on 2026-09-20. The
+repository still contains the original brief below and placeholder manifests;
+there is no runnable application yet. See REPORT.md for observed versions,
+commands, blockers and verification status. Private local planning files are
+ignored; submitted architecture, security, API and setup documentation will be
+maintained here as implementation is verified.
+
+Ubuntu-24.04 was installed and verified as WSL2 on 2026-09-20 alongside Docker
+Desktop. No reboot was requested. Linux account creation is complete. Launch it:
+
+```powershell
+wsl -d Ubuntu-24.04
+```
+
+On a fresh setup, create the Linux username/password locally; never put passwords
+or OAuth secrets in chat. Then verify the distribution with `wsl --list --verbose`
+and, inside Ubuntu, `cat /etc/os-release`, `ps -p 1 -o comm=`, and
+`python3 --version`. LXD discovery and storage feasibility must precede
+initialization or container tests. Do not use Docker Desktop's internal distro
+for this project or reinitialize existing LXD storage.
+
+For a fresh machine, first run `wsl --install -d Ubuntu-24.04 --no-launch`;
+administrator privileges and a reboot may be required if Windows requests them.
+The remaining steps are pending, not a successful setup rehearsal. Use a Linux
+filesystem checkout for development after Ubuntu is ready; the current checkout
+is in Windows OneDrive. Keep credentials in ignored `.env` files or protected
+Linux configuration outside Git; `.env.example` remains tracked.
+
+Reference: [Microsoft WSL installation guidance](https://learn.microsoft.com/en-us/windows/wsl/install).
+
+Current Linux checks: systemd running, Python 3.12.3, Linux Node 24.21.0, and
+Astro 7.3.3 build verified. LXD 5.21.7 is running after an Ubuntu-only restart;
+the fresh test server uses a 12 GiB loop-backed Btrfs pool and private bridge.
+The real 4 GiB container disk quota was verified. [Sprint 0 evidence](docs/sprint0-evidence.md) and
+[probe instructions](scripts/sprint0/README.md) document reproducible checks.
+TinyFlux probes selected hourly UTC partitions to reduce measured per-file
+memory use; no production collector or API exists yet.
+
+### Sprint 1 status
+
+The initial Falcon API now exposes only `GET /healthz`. Every registered route
+and HTTP method must have an explicit policy; undeclared paths are denied and an
+undeclared method receives a structured 405 response. Each response receives a
+server-generated `X-Request-ID`. Authentication, OAuth callbacks, inventory,
+and collection remain unimplemented at this point.
+
+SQLite migrations now advance an empty or existing version-1 database to the
+control-plane schema used by later work: identities and sessions, OAuth
+transactions, bootstrap settings, stable container inventory and assignments,
+latest snapshots, collector status, operation intents, quota reservations,
+history jobs, and audit records. Migrations are ordered, recorded, idempotent,
+and executed with foreign-key enforcement on each connection. No login,
+collection, or LXD mutation has been demonstrated.
+
+The independent collector skeleton currently has no LXD client and starts no
+continuous loop. Its one-shot service process writes a SQLite heartbeat and can
+upsert an explicitly supplied latest snapshot for an existing stable inventory
+ID. This establishes the API/collector process boundary without touching the
+preserved LXD test resources or claiming collection works.
+
+The first Astro browser slice provides a static sign-in page and an
+authenticated-dashboard placeholder. The dashboard explicitly renders loading,
+empty, stale, and error states selected with `?state=loading|empty|stale|error`.
+It does not claim an authenticated session or live inventory; those states are
+ready for the later SQLite snapshot API.
+
+The Sprint 2 domain layer now enforces invitation normalization, active-admin
+protection, revocation cleanup, configured allocation quotas, and stable-ID
+container access. A Container User needs an explicit assignment; an existing
+unassigned container ID is forbidden. These services are verified against
+temporary SQLite databases but are not yet HTTP endpoints or a demonstrated
+browser workflow.
+
+Opaque browser-session handling now stores only SHA-256 token digests and
+requires an active user on protected route policies. Sessions enforce idle and
+absolute expiry; user revocation takes effect on the next request. Google OAuth
+does not create sessions until its callback is implemented and tested.
+
+Admin-only JSON endpoints now list users, invite by email, change role/quota,
+revoke users, and add or remove container assignments. They reject unknown JSON
+fields and are protected by the explicit policy registry. The browser pages and
+OAuth callback are not wired to these endpoints yet.
+
+Authenticated container-list and detail endpoints read the latest SQLite
+snapshots only. Administrators can list the current inventory; Container Users
+receive only explicit assignments, and the central stable-ID check rejects an
+existing unassigned container with 403 before it is resolved further. These are
+not LXD polling endpoints.
+
+Authenticated callers can now read their server-calculated identity, quota,
+allocated resources, and remaining budget through `/api/me` and `/api/me/quota`.
+The latter currently reports no pending reservations because creation operations
+have not been implemented.
+
+The Astro role flows now include an Admin Users page for invitation, role/quota
+changes, revocation confirmation, and assignment management, plus a Container
+User dashboard that calls the authenticated SQLite APIs. It renders loading,
+empty, forbidden, expired-session, stale/partial, and API-error messages. Real
+browser login and a live API deployment remain unverified.
+
+Read-only LXD discovery now enumerates project-scoped instances by project plus
+LXD UUID and reports partial-project failures without deleting SQLite state. A
+live probe observed `default`, `hsm`, and `hsm-observe`; capacity API exposure
+and inventory reconciliation are still pending.
+
+Operation intents, actor-scoped idempotency keys, audit intents, and allocation
+reservations are now persisted before future LXD mutation work. Unknown outcomes
+retain reservations for later reconciliation; no LXD mutation has been wired.
+
+`GET /api/host/capacity` is admin-only and returns a safe infeasible state when
+inventory is partial. Complete discovery reconciles stable project/UUID identity
+into SQLite without deleting inventory or assignments.
+
+### Google OAuth prerequisite
+
+Sprint 0 has not verified Google login or callback reachability because no API
+callback endpoint exists yet. Locally, create a Google **Web application** OAuth
+client, configure the exact development redirect URI
+`http://localhost:8000/auth/callback`, request only `openid`, `email`, and
+`profile`, and add the intended accounts as test users while the consent screen
+is in testing. Copy its client ID, client secret, and your verified bootstrap
+email into an ignored `.env` created from `.env.example`; do not put them in Git
+or chat. The configuration loader validates the values when the future API starts.
+
 **Contact:** dev@roboticgen.co
 
 ---

@@ -1,0 +1,21 @@
+# Exact environment used for Sprint 0 probes on Ubuntu/Python 3.12.
+# This is not yet a production dependency lock or security audit.
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.1
+cryptography==50.0.1
+falcon==4.3.1
+google-auth==2.58.0
+gunicorn==26.2.0
+idna==3.20
+pyasn1==0.6.4
+pyasn1_modules==0.4.2
+pycparser==3.0
+pylxd==2.4.2
+python-dateutil==2.9.0.post0
+requests==2.34.2
+requests-toolbelt==1.0.0
+six==1.17.0
+tinyflux==1.2.0
+urllib3==2.8.0
+ws4py==0.6.0

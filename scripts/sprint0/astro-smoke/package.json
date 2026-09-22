@@ -1,0 +1,9 @@
+{
+  "name": "hsm-sprint0-astro-smoke",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "engines": {"node": "24.21.0"},
+  "scripts": {"build": "astro build"},
+  "dependencies": {"astro": "7.3.3"}
+}

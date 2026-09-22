@@ -1,0 +1,37 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Users">
+  <h1>User administration</h1>
+  <p id="users-state" class="state" aria-live="polite">Loading users…</p>
+  <section class="card"><h2>Invite user</h2><form id="invite-form">
+    <label>Email <input name="email" type="email" required /></label>
+    <label>Role <select name="role"><option value="user">Container User</option><option value="admin">Admin</option></select></label>
+    <label>RAM bytes <input name="ram_bytes" type="number" min="0" required /></label>
+    <label>CPU cores <input name="cpu_cores" type="number" min="0" required /></label>
+    <label>Disk bytes <input name="disk_bytes" type="number" min="0" required /></label>
+    <button>Invite</button></form></section>
+  <section class="card"><h2>Users</h2><div id="users-list"></div></section>
+  <script>
+    import { api, ApiError, json } from "../lib/api";
+    type User = { id:number; email:string; role:string; status:string; quota:Record<string,number>; allocated:Record<string,number> };
+    const state = document.querySelector<HTMLElement>("#users-state")!;
+    const list = document.querySelector<HTMLElement>("#users-list")!;
+    const number = (value: FormDataEntryValue | null) => Number(value);
+    const render = (users: User[]) => { list.replaceChildren(...users.map((user) => {
+      const row = document.createElement("article"); row.className = "card";
+      row.innerHTML = `<h3></h3><p></p><p></p><button data-action="edit">Save role/quota</button> <button data-action="revoke">Revoke</button><form><label>Container ID <input required name="container_id"></label><button data-action="assign">Assign</button><button data-action="unassign">Remove access</button></form>`;
+      row.querySelector("h3")!.textContent = user.email;
+      row.querySelectorAll("p")[0].textContent = `${user.role} · ${user.status}`;
+      row.querySelectorAll("p")[1].textContent = `Quota ${JSON.stringify(user.quota)}; allocated ${JSON.stringify(user.allocated)}`;
+      row.querySelector<HTMLButtonElement>('[data-action="edit"]')!.onclick = async () => { const role = prompt("Role (admin or user)", user.role); if (!role) return; await api(`/api/users/${user.id}`, json("PATCH", { role })); await load(); };
+      row.querySelector<HTMLButtonElement>('[data-action="revoke"]')!.onclick = async () => { if (confirm(`Revoke ${user.email}? Existing sessions and assignments will be removed.`)) { await api(`/api/users/${user.id}`, { method: "DELETE" }); await load(); } };
+      row.querySelector("form")!.onsubmit = async (event) => { event.preventDefault(); const id = new FormData(event.currentTarget as HTMLFormElement).get("container_id"); await api(`/api/users/${user.id}/containers/${id}`, json("PUT", {})); await load(); };
+      row.querySelector<HTMLButtonElement>('[data-action="unassign"]')!.onclick = async () => { const id = new FormData(row.querySelector("form")!).get("container_id"); if (id) { await api(`/api/users/${user.id}/containers/${id}`, { method: "DELETE" }); await load(); } };
+      return row;
+    })); };
+    async function load() { state.textContent = "Loading users…"; try { const data = await api<{items:User[]}>("/api/users"); render(data.items); state.textContent = data.items.length ? "" : "No invited users."; } catch (error) { state.textContent = error instanceof ApiError && error.status === 401 ? "Session expired. Sign in again." : error instanceof ApiError && error.status === 403 ? "Forbidden: administrator access is required." : "Could not load users."; } }
+    document.querySelector<HTMLFormElement>("#invite-form")!.onsubmit = async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await api("/api/users", json("POST", { email: form.get("email"), role: form.get("role"), quota: { ram_bytes:number(form.get("ram_bytes")), cpu_cores:number(form.get("cpu_cores")), disk_bytes:number(form.get("disk_bytes")) } })); (event.currentTarget as HTMLFormElement).reset(); await load(); } catch { state.textContent = "Invite failed. Check the values and try again."; } };
+    load();
+  </script>
+</Base>

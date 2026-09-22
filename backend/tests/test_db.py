@@ -24,7 +24,7 @@ class MigrationTests(unittest.TestCase):
                 }
             finally:
                 connection.close()
-        self.assertEqual(versions, [(1,), (2,)])
+        self.assertEqual(versions, [(1,), (2,), (3,)])
         self.assertEqual(foreign_keys, 1)
         self.assertTrue({
             "users", "sessions", "oauth_states", "containers", "container_assignments",
@@ -51,5 +51,5 @@ class MigrationTests(unittest.TestCase):
                 ).fetchone()
             finally:
                 upgraded.close()
-        self.assertEqual(versions, [(1,), (2,)])
+        self.assertEqual(versions, [(1,), (2,), (3,)])
         self.assertEqual(has_users, (1,))

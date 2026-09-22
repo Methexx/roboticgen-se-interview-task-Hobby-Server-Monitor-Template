@@ -17,6 +17,8 @@ from hsm.operations import OperationConflict, OperationService, Reservation
 from hsm.lxd.discovery import DiscoveryError
 from hsm.lxd.capacity import CapacityService
 from hsm.lxd.creation import LxdCreator
+from hsm.quota import Allocation
+from hsm.quota.service import require_allocation_change
 
 
 def _item(row: sqlite3.Row | tuple[object, ...]) -> dict[str, object]:
@@ -228,3 +230,50 @@ class ContainerActionResource:
 
     def on_post(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
         self._mutation.on_post(request, response)
+
+
+class ContainerLimitsResource:
+    _fields = {"ram_bytes", "cpu_cores", "cpu_allowance_pct", "disk_bytes", "process_limit"}
+    def __init__(self, database_path: Path, creator: LxdCreator) -> None:
+        self._path, self._creator = database_path, creator
+    def on_patch(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
+        if request.content_type != "application/json" or not isinstance(request.media, dict) or not request.media or set(request.media) - self._fields:
+            raise falcon.HTTPBadRequest(description="Limit update has missing or unknown fields")
+        values = request.media
+        if any(type(value) is not int or value <= 0 for value in values.values()) or values.get("cpu_allowance_pct", 1) > 100 or values.get("process_limit", 1) > 65535:
+            raise falcon.HTTPBadRequest(description="Limit values are invalid")
+        key=request.get_header("Idempotency-Key")
+        if not key or len(key)>128: raise falcon.HTTPBadRequest(description="Idempotency-Key is required")
+        identifier=request.context.route_params["container_id"]
+        connection=connect(self._path)
+        try:
+            row=connection.execute("SELECT c.project,c.current_name,c.managed,a.ram_bytes,a.cpu_cores,a.cpu_allowance_pct,a.disk_bytes,a.pool FROM containers c JOIN container_allocations a ON a.container_id=c.id WHERE c.id=? AND c.lifecycle='present'",(identifier,)).fetchone()
+            if row is None or not row[2]: raise falcon.HTTPNotFound(description="Managed container not found")
+            if any(row[index] is None for index in (3,4,6,7)): raise falcon.HTTPConflict(description="Container allocation is unknown")
+            replacement=Allocation(values.get("ram_bytes",row[3]),values.get("cpu_cores",row[4]),values.get("disk_bytes",row[6]))
+            if replacement.disk_bytes < row[6]: raise falcon.HTTPBadRequest(description="Disk shrink is not supported")
+            require_allocation_change(connection,identifier,replacement)
+        finally: connection.close()
+        delta=Allocation(max(0,replacement.ram_bytes-row[3]),max(0,replacement.cpu_cores-row[4]),max(0,replacement.disk_bytes-row[6]))
+        request_hash=hashlib.sha256(json.dumps(values,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+        service=OperationService(self._path)
+        try:
+            operation_id,created=service.begin(actor_id=request.context.user.id,kind="container.limits",request_hash=request_hash,idempotency_key=key,target_id=identifier,reservations=(Reservation("host","global",delta.ram_bytes,delta.cpu_cores,delta.disk_bytes),Reservation("pool",row[7],0,0,delta.disk_bytes)))
+        except OperationConflict as error: raise falcon.HTTPConflict(description=str(error)) from error
+        if not created: response.status=falcon.HTTP_202;response.media={"operation_id":operation_id};return
+        config={}
+        if "ram_bytes" in values: config["limits.memory"]=str(values["ram_bytes"])
+        if "cpu_cores" in values: config["limits.cpu"]=str(values["cpu_cores"])
+        if "cpu_allowance_pct" in values: config["limits.cpu.allowance"]=f"{values['cpu_allowance_pct']}%"
+        if "process_limit" in values: config["limits.processes"]=str(values["process_limit"])
+        try: self._creator.update_limits(row[0],row[1],config,values.get("disk_bytes"))
+        except DiscoveryError as error:
+            service.finish(operation_id,status="unknown",error_code=error.kind);raise falcon.HTTPServiceUnavailable(description=error.message) from error
+        connection=connect(self._path)
+        try:
+            with connection:
+                connection.execute("UPDATE container_allocations SET ram_bytes=?,cpu_cores=?,cpu_allowance_pct=?,disk_bytes=?,verified_at=datetime('now') WHERE container_id=?",(replacement.ram_bytes,replacement.cpu_cores,values.get("cpu_allowance_pct",row[5]),replacement.disk_bytes,identifier))
+                connection.execute("UPDATE operations SET status='succeeded',completed_at=datetime('now') WHERE id=?",(operation_id,));connection.execute("DELETE FROM allocation_reservations WHERE operation_id=?",(operation_id,))
+                connection.execute("INSERT INTO audit_log(ts,actor_user_id,action,target_type,target_id,target_name,operation_id,detail_json,outcome) VALUES(datetime('now'),?,?,?,?,?,?,?, 'ok')",(request.context.user.id,"container.limits","container",identifier,row[1],operation_id,json.dumps(values,sort_keys=True)))
+        finally: connection.close()
+        response.status=falcon.HTTP_204

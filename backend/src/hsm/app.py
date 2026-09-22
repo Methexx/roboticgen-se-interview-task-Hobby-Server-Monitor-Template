@@ -9,7 +9,7 @@ import falcon
 
 from hsm.auth.sessions import SessionService
 from hsm.api.users import AssignmentResource, UserResource, UsersResource
-from hsm.api.containers import ContainerActionResource, ContainerResource, ContainersResource
+from hsm.api.containers import ContainerActionResource, ContainerLimitsResource, ContainerResource, ContainersResource
 from hsm.api.me import MeResource, MyQuotaResource
 from hsm.api.host import HostCapacityResource
 from hsm.lxd.discovery import LxdDiscovery
@@ -122,6 +122,7 @@ def create_app(settings: Settings) -> falcon.App:
         "GET": Policy.CONTAINER_ACCESS, "DELETE": Policy.ADMIN,
     })
     registry.add_route(app, "/api/containers/{container_id}/actions/{action}", ContainerActionResource(settings.database_path, creator), {"POST": Policy.ADMIN})
+    registry.add_route(app, "/api/containers/{container_id}/limits", ContainerLimitsResource(settings.database_path, creator), {"PATCH": Policy.ADMIN})
     registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})

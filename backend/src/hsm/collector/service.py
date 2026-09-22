@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+from typing import Any, Callable
+import time
 
 from hsm.db import connect, migrate
 
@@ -87,3 +89,42 @@ class Collector:
                 )
         finally:
             connection.close()
+
+    def poll_lxd(self, client_factory: Callable[..., Any], timeout_seconds: int) -> None:
+        """Read LXD only; retain prior snapshots whenever a project fails."""
+        now = _utc_now()
+        try:
+            root = client_factory(timeout=timeout_seconds)
+            projects = [project.name for project in root.projects.all()]
+        except Exception as error:
+            self._status({"observed_at": now, "state": "lxd_down", "error": type(error).__name__})
+            return
+        failures: list[str] = []
+        for project in projects:
+            try:
+                client = client_factory(project=project, timeout=timeout_seconds)
+                for instance in client.instances.all():
+                    identifier = instance.config.get("volatile.uuid")
+                    if not identifier: continue
+                    connection = connect(self._database_path)
+                    try:
+                        row = connection.execute("SELECT id FROM containers WHERE project=? AND lxd_uuid=? AND lifecycle='present'", (project, identifier)).fetchone()
+                    finally: connection.close()
+                    if row is None: continue
+                    state = instance.state()
+                    network = state.get("network", {}) if isinstance(state, dict) else {}
+                    rx = sum(int(data.get("counters", {}).get("bytes_received", 0)) for data in network.values() if isinstance(data, dict))
+                    tx = sum(int(data.get("counters", {}).get("bytes_sent", 0)) for data in network.values() if isinstance(data, dict))
+                    memory = state.get("memory", {}) if isinstance(state, dict) else {}
+                    disk = state.get("disk", {}) if isinstance(state, dict) else {}
+                    self.record_latest(LatestSnapshot(container_id=row[0], state=str(state.get("status", "unknown")), ipv4=(), sampled_at=now, ram_used_bytes=memory.get("usage"), disk_used_bytes=sum(int(v.get("usage",0)) for v in disk.values() if isinstance(v,dict)), net_rx_bytes=rx, net_tx_bytes=tx))
+            except Exception:
+                failures.append(project)
+        self._status({"observed_at": now, "state": "partial" if failures else "ok", "project_errors": failures, "last_successful_collection": now if not failures else None})
+
+    def _status(self, payload: dict[str, object]) -> None:
+        connection = connect(self._database_path)
+        try:
+            with connection:
+                connection.execute("INSERT INTO collector_status(key,value_json) VALUES('heartbeat',?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json", (json.dumps(payload),))
+        finally: connection.close()

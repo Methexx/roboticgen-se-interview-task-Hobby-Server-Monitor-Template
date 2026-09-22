@@ -15,7 +15,7 @@ from hsm.api.host import HostCapacityResource
 from hsm.api.history import ConsumptionResource, HistoryResource
 from hsm.api.accounting import AccountingResource
 from hsm.api.exec import ExecResource
-from hsm.api.oauth import LogoutResource, OAuthLoginResource
+from hsm.api.oauth import LogoutResource, OAuthCallbackResource, OAuthLoginResource
 from hsm.lxd.discovery import LxdDiscovery
 from hsm.lxd.creation import LxdCreator
 from hsm.lxd.capacity import CapacityService
@@ -104,6 +104,7 @@ def create_app(settings: Settings) -> falcon.App:
     app.add_error_handler(Exception, _unexpected_error)
     registry.add_route(app, "/healthz", HealthResource(), {"GET": Policy.PUBLIC})
     registry.add_route(app, "/auth/login", OAuthLoginResource(settings), {"GET": Policy.PUBLIC})
+    registry.add_route(app, "/auth/callback", OAuthCallbackResource(settings, sessions), {"GET": Policy.PUBLIC})
     registry.add_route(app, "/auth/logout", LogoutResource(sessions), {"POST": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/users", UsersResource(settings.database_path), {
         "GET": Policy.ADMIN, "POST": Policy.ADMIN,

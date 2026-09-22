@@ -9,6 +9,7 @@ import hashlib
 import re
 import uuid
 import time
+from datetime import datetime, timezone
 
 import falcon
 
@@ -23,6 +24,7 @@ from hsm.quota.service import require_allocation_change
 
 def _item(row: sqlite3.Row | tuple[object, ...]) -> dict[str, object]:
     values = tuple(row)
+    stale = values[16] is None or (datetime.now(timezone.utc) - datetime.fromisoformat(values[16])).total_seconds() > 30
     return {
         "id": values[0], "project": values[1], "name": values[2],
         "state": values[3], "image": values[4], "os_version": values[5],
@@ -31,7 +33,7 @@ def _item(row: sqlite3.Row | tuple[object, ...]) -> dict[str, object]:
             "cpu_pct": values[9], "ram_used_bytes": values[10], "disk_used_bytes": values[11],
             "net_rx_bytes": values[12], "net_tx_bytes": values[13],
             "net_rx_bps": values[14], "net_tx_bps": values[15],
-        }, "sampled_at": values[16], "error_code": values[17],
+        }, "sampled_at": values[16], "error_code": values[17], "stale": stale,
     }
 
 
@@ -58,9 +60,10 @@ class ContainersResource:
                     "WHERE c.lifecycle = 'present' AND a.user_id = ? ORDER BY c.project, c.current_name",
                     (request.context.user.id,),
                 ).fetchall()
+            statuses = {key: json.loads(value) for key, value in connection.execute("SELECT key,value_json FROM collector_status")}
         finally:
             connection.close()
-        response.media = {"items": [_item(row) for row in rows], "next_cursor": None}
+        response.media = {"items": [_item(row) for row in rows], "next_cursor": None, "collector": statuses}
 
     def on_post(self, request: falcon.Request, response: falcon.Response) -> None:
         if self._create is None:

@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from hsm.collector.service import Collector
+from pylxd import Client
 
 
 def main() -> None:
@@ -13,7 +14,7 @@ def main() -> None:
     interval = 10
     collector = Collector(path)
     while True:
-        collector.heartbeat()
+        collector.poll_lxd(Client, 10)
         time.sleep(interval)
 
 

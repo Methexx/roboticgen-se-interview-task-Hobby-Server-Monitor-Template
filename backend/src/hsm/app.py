@@ -13,6 +13,7 @@ from hsm.api.containers import ContainerActionResource, ContainerLimitsResource,
 from hsm.api.me import MeResource, MyQuotaResource
 from hsm.api.host import HostCapacityResource
 from hsm.api.history import HistoryResource
+from hsm.api.accounting import AccountingResource
 from hsm.lxd.discovery import LxdDiscovery
 from hsm.lxd.creation import LxdCreator
 from hsm.lxd.capacity import CapacityService
@@ -128,5 +129,6 @@ def create_app(settings: Settings) -> falcon.App:
     registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})
+    registry.add_route(app, "/api/accounting", AccountingResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     app.req_options.auto_parse_form_urlencoded = False
     return app

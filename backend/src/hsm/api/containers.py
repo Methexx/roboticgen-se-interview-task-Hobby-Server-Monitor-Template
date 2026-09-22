@@ -99,7 +99,7 @@ class CreateContainerResource:
         if not created:
             response.status = falcon.HTTP_202; response.media = {"operation_id": operation_id}; return
         config = {"limits.memory": str(ram), "limits.cpu": str(cpu), "limits.cpu.allowance": f"{payload['cpu_allowance_pct']}%", "limits.processes": str(payload["process_limit"]), "security.privileged": "false", "security.nesting": "false", "boot.autostart": str(payload["autostart"]).lower(), "volatile.apply_template": "create"}
-        lxd_payload = {"name": payload["name"], "type": "container", "source": {"type": "image", "fingerprint": next(item["fingerprint"] for item in capacity["images"] if item["alias"] == payload["image"])}, "profiles": [payload["profile"]], "config": config, "devices": {"root": {"type": "disk", "path": "/", "pool": payload["pool"], "size": str(disk)}, "eth0": {"type": "nic", "nictype": "bridged", "network": payload["network"]}}, "ephemeral": payload["ephemeral"], "description": payload["description"]}
+        lxd_payload = {"name": payload["name"], "type": "container", "source": {"type": "image", "fingerprint": next(item["fingerprint"] for item in capacity["images"] if item["alias"] == payload["image"])}, "profiles": [payload["profile"]], "config": config, "devices": {"root": {"type": "disk", "path": "/", "pool": payload["pool"], "size": str(disk)}, "eth0": {"type": "nic", "network": payload["network"]}}, "ephemeral": payload["ephemeral"], "description": payload["description"]}
         started = time.monotonic()
         try:
             result = self._creator.create(capacity["creation_project"], lxd_payload, payload["start"])

@@ -1,0 +1,308 @@
+{
+  "machine": {
+    "system": "Linux",
+    "node": "DESKTOP-OI1BUO1",
+    "release": "6.6.87.2-microsoft-standard-WSL2",
+    "version": "#1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025",
+    "machine": "x86_64",
+    "processor": "x86_64"
+  },
+  "logical_cpus": 16,
+  "interval_seconds": 60,
+  "method": "procfs process-tree summed RSS and CPU tick deltas; no browser load; one Gunicorn worker",
+  "workload": [
+    {
+      "project": "hsm",
+      "name": "hsm-smoke-renamed",
+      "state": "Running"
+    },
+    {
+      "project": "hsm-observe",
+      "name": "inventory-smoke",
+      "state": "Stopped"
+    }
+  ],
+  "lxd_version": "5.21.7",
+  "pools": [
+    {
+      "name": "hsm-btrfs",
+      "driver": "btrfs",
+      "total_bytes": 12884901888,
+      "used_bytes": 1893183488,
+      "free_bytes": 10991718400,
+      "quota_supported": true
+    }
+  ],
+  "health": 200,
+  "measurement": {
+    "api": {
+      "rss_mean_mib": 68.234375,
+      "rss_peak_mib": 68.234375,
+      "cpu_percent_one_core": 0.03326289905643432,
+      "alive": true
+    },
+    "collector": {
+      "rss_mean_mib": 39.552083333333336,
+      "rss_peak_mib": 40.25,
+      "cpu_percent_one_core": 0.2661031924514744,
+      "alive": true
+    }
+  },
+  "elapsed_seconds": 60.127050159000646,
+  "samples": [
+    {
+      "elapsed": 0.001,
+      "latest": []
+    },
+    {
+      "elapsed": 1.003,
+      "latest": []
+    },
+    {
+      "elapsed": 2.004,
+      "latest": []
+    },
+    {
+      "elapsed": 3.007,
+      "latest": []
+    },
+    {
+      "elapsed": 4.009,
+      "latest": []
+    },
+    {
+      "elapsed": 5.012,
+      "latest": []
+    },
+    {
+      "elapsed": 6.014,
+      "latest": []
+    },
+    {
+      "elapsed": 7.016,
+      "latest": []
+    },
+    {
+      "elapsed": 8.017,
+      "latest": []
+    },
+    {
+      "elapsed": 9.019,
+      "latest": []
+    },
+    {
+      "elapsed": 10.02,
+      "latest": []
+    },
+    {
+      "elapsed": 11.025,
+      "latest": []
+    },
+    {
+      "elapsed": 12.027,
+      "latest": []
+    },
+    {
+      "elapsed": 13.029,
+      "latest": []
+    },
+    {
+      "elapsed": 14.031,
+      "latest": []
+    },
+    {
+      "elapsed": 15.033,
+      "latest": []
+    },
+    {
+      "elapsed": 16.035,
+      "latest": []
+    },
+    {
+      "elapsed": 17.037,
+      "latest": []
+    },
+    {
+      "elapsed": 18.039,
+      "latest": []
+    },
+    {
+      "elapsed": 19.041,
+      "latest": []
+    },
+    {
+      "elapsed": 20.042,
+      "latest": []
+    },
+    {
+      "elapsed": 21.044,
+      "latest": []
+    },
+    {
+      "elapsed": 22.046,
+      "latest": []
+    },
+    {
+      "elapsed": 23.047,
+      "latest": []
+    },
+    {
+      "elapsed": 24.049,
+      "latest": []
+    },
+    {
+      "elapsed": 25.051,
+      "latest": []
+    },
+    {
+      "elapsed": 26.055,
+      "latest": []
+    },
+    {
+      "elapsed": 27.058,
+      "latest": []
+    },
+    {
+      "elapsed": 28.059,
+      "latest": []
+    },
+    {
+      "elapsed": 29.062,
+      "latest": []
+    },
+    {
+      "elapsed": 30.065,
+      "latest": []
+    },
+    {
+      "elapsed": 31.067,
+      "latest": []
+    },
+    {
+      "elapsed": 32.069,
+      "latest": []
+    },
+    {
+      "elapsed": 33.071,
+      "latest": []
+    },
+    {
+      "elapsed": 34.074,
+      "latest": []
+    },
+    {
+      "elapsed": 35.076,
+      "latest": []
+    },
+    {
+      "elapsed": 36.079,
+      "latest": []
+    },
+    {
+      "elapsed": 37.081,
+      "latest": []
+    },
+    {
+      "elapsed": 38.083,
+      "latest": []
+    },
+    {
+      "elapsed": 39.085,
+      "latest": []
+    },
+    {
+      "elapsed": 40.088,
+      "latest": []
+    },
+    {
+      "elapsed": 41.091,
+      "latest": []
+    },
+    {
+      "elapsed": 42.092,
+      "latest": []
+    },
+    {
+      "elapsed": 43.095,
+      "latest": []
+    },
+    {
+      "elapsed": 44.097,
+      "latest": []
+    },
+    {
+      "elapsed": 45.099,
+      "latest": []
+    },
+    {
+      "elapsed": 46.101,
+      "latest": []
+    },
+    {
+      "elapsed": 47.103,
+      "latest": []
+    },
+    {
+      "elapsed": 48.105,
+      "latest": []
+    },
+    {
+      "elapsed": 49.107,
+      "latest": []
+    },
+    {
+      "elapsed": 50.109,
+      "latest": []
+    },
+    {
+      "elapsed": 51.11,
+      "latest": []
+    },
+    {
+      "elapsed": 52.112,
+      "latest": []
+    },
+    {
+      "elapsed": 53.114,
+      "latest": []
+    },
+    {
+      "elapsed": 54.116,
+      "latest": []
+    },
+    {
+      "elapsed": 55.118,
+      "latest": []
+    },
+    {
+      "elapsed": 56.12,
+      "latest": []
+    },
+    {
+      "elapsed": 57.122,
+      "latest": []
+    },
+    {
+      "elapsed": 58.124,
+      "latest": []
+    },
+    {
+      "elapsed": 59.126,
+      "latest": []
+    }
+  ],
+  "api_stopped_history_counts": [
+    0,
+    0
+  ],
+  "collector_status": [
+    [
+      "heartbeat",
+      "{\"observed_at\": \"2026-09-22T10:32:47.518959+00:00\", \"state\": \"partial\", \"project_errors\": [\"hsm\", \"hsm-observe\"], \"last_successful_collection\": null}"
+    ]
+  ],
+  "snapshots": [],
+  "tinyflux_bytes": 0,
+  "api_log": "[2026-09-22 16:01:23 +0530] [15021] [INFO] Starting gunicorn 26.2.0\n[2026-09-22 16:01:23 +0530] [15021] [INFO] Listening at: http://127.0.0.1:18761 (15021)\n[2026-09-22 16:01:23 +0530] [15021] [INFO] Using worker: sync\n[2026-09-22 16:01:23 +0530] [15023] [INFO] Booting worker with pid: 15023\n[2026-09-22 16:01:23 +0530] [15021] [INFO] Control socket listening at /run/user/1000/gunicorn.ctl\n[2026-09-22 16:02:28 +0530] [15021] [INFO] Handling signal: term\n[2026-09-22 16:02:28 +0530] [15023] [INFO] Worker exiting (pid: 15023)\n[2026-09-22 16:02:29 +0530] [15021] [INFO] Shutting down: Master\n",
+  "collector_log": ""
+}

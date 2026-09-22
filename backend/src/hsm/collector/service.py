@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 import time
+import os
+from tinyflux import Point, TinyFlux
 
 from hsm.db import connect, migrate
 
@@ -42,8 +44,10 @@ class LatestSnapshot:
 class Collector:
     """Own the future metrics database while keeping API lifetime separate."""
 
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: Path, metrics_dir: Path | None = None, retention_hours: int = 168) -> None:
         self._database_path = database_path
+        self._metrics_dir = metrics_dir or database_path.parent / "metrics"
+        self._retention_hours = retention_hours
 
     def heartbeat(self, *, now: str | None = None) -> None:
         """Persist that the independent process is alive without contacting LXD."""
@@ -89,6 +93,28 @@ class Collector:
                 )
         finally:
             connection.close()
+        self._record_hourly(snapshot)
+
+    def _record_hourly(self, snapshot: LatestSnapshot) -> None:
+        """Collector-only TinyFlux write; an error never discards SQLite latest."""
+        try:
+            stamp = datetime.fromisoformat(snapshot.sampled_at).astimezone(timezone.utc)
+            self._metrics_dir.mkdir(parents=True, exist_ok=True)
+            path = self._metrics_dir / f"metrics-{stamp:%Y%m%d%H}.tinyflux"
+            fields = {key: value for key, value in asdict(snapshot).items() if key not in {"container_id", "ipv4", "sampled_at", "state", "image", "os_version", "error_code"} and value is not None}
+            fields.update({"state": snapshot.state, "ipv4_json": json.dumps(snapshot.ipv4), "image": snapshot.image or "", "os_version": snapshot.os_version or ""})
+            database = TinyFlux(str(path))
+            database.insert(Point.from_dict({"measurement": "container", "time": snapshot.sampled_at, "tags": {"container_id": snapshot.container_id}, "fields": fields}))
+            database.close()
+            self._retain()
+        except Exception as error:
+            self._status({"observed_at": _utc_now(), "state": "tinyflux_error", "error": type(error).__name__})
+
+    def _retain(self) -> None:
+        cutoff = time.time() - self._retention_hours * 3600
+        for path in self._metrics_dir.glob("metrics-*.tinyflux"):
+            if path.stat().st_mtime < cutoff:
+                path.unlink()
 
     def poll_lxd(self, client_factory: Callable[..., Any], timeout_seconds: int) -> None:
         """Read LXD only; retain prior snapshots whenever a project fails."""

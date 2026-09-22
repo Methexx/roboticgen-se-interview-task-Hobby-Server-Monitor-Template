@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 import time
+import threading
 
 from hsm.lxd.discovery import DiscoveryError
 
@@ -51,19 +52,31 @@ class LxdCreator:
             kind = "timeout" if "timeout" in text else "unavailable" if any(x in text for x in ("connection", "socket", "refused")) else "malformed"
             raise DiscoveryError(kind, "LXD limit update outcome could not be confirmed") from error
 
-    def execute(self, project: str, name: str, command: str) -> dict[str, object]:
+    def execute(self, project: str, name: str, command: str, expected_uuid: str | None = None) -> dict[str, object]:
         chunks: list[tuple[str, bytes]]=[]; size=0; truncated=False
+        lock = threading.Lock()
         def handler(kind: str):
             def receive(data: str | bytes) -> None:
                 nonlocal size,truncated
                 raw=data.encode() if isinstance(data,str) else data
-                room=max(0,65536-size); chunks.append((kind,raw[:room]));size+=min(len(raw),room);truncated|=len(raw)>room
+                with lock:
+                    room=max(0,65536-size)
+                    if room and raw: chunks.append((kind,raw[:room]))
+                    size+=min(len(raw),room);truncated|=len(raw)>room
             return receive
         started=time.monotonic()
         try:
             instance=self._factory(project=project,timeout=self._timeout).instances.get(name)
+            if expected_uuid and instance.config.get("volatile.uuid") != expected_uuid:
+                raise DiscoveryError("identity_changed", "Container identity changed; rediscover inventory")
+            if instance.status.lower() != "running":
+                raise DiscoveryError("not_running", "Container must be running")
             result=instance.execute(["/usr/bin/timeout","-k","2s","15s","/bin/sh","-c",command],environment={"PATH":"/usr/sbin:/usr/bin:/sbin:/bin","LANG":"C"},stdin_payload=None,stdout_handler=handler("out"),stderr_handler=handler("err"),decode=False)
             out=b"".join(v for k,v in chunks if k=="out").decode("utf-8","replace");err=b"".join(v for k,v in chunks if k=="err").decode("utf-8","replace")
-            return {"stdout":out,"stderr":err,"exit_code":result.exit_code,"duration_ms":int((time.monotonic()-started)*1000),"truncated":truncated,"timed_out":result.exit_code==124}
+            out = out.encode()[:65536].decode("utf-8", "ignore")
+            err = err.encode()[:max(0, 65536-len(out.encode()))].decode("utf-8", "ignore")
+            return {"stdout":out,"stderr":err,"exit_code":result.exit_code,"duration_ms":int((time.monotonic()-started)*1000),"truncated":truncated,"timed_out":result.exit_code in {124,137}}
+        except DiscoveryError:
+            raise
         except Exception as error:
             raise DiscoveryError("unavailable" if "connection" in str(error).lower() else "malformed","LXD exec outcome could not be confirmed") from error

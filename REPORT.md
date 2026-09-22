@@ -323,3 +323,6 @@ What is unfinished, broken, simulated, or deliberately cut — and why.
 Which tools, for which parts of the system, what you accepted as-is, and
 what you rejected or had to fix. You should be able to explain every line
 you submit, AI-assisted or not.
+
+- Sprint 4: added project-aware collector polling, hourly TinyFlux partitions, bounded SQLite history cache, history, accounting, and consumption API source. Focused collector, migration, and app checks passed where recorded in commits.
+

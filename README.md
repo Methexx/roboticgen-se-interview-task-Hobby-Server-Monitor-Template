@@ -429,3 +429,8 @@ For technical clarifications,
 - SQLite3 — https://docs.python.org/3/library/sqlite3.html
 - LXD — https://canonical.com/lxd
 - Google OAuth 2.0 — https://developers.google.com/identity/protocols/oauth2
+
+## Collector and history
+
+The independent collector writes latest snapshots to SQLite and hourly TinyFlux partitions. API history reads the bounded SQLite cache only; it never opens TinyFlux. History ranges are limited to 15m, 1h, 6h, 24h, or 7d and return at most 300 points.
+

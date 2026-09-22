@@ -29,7 +29,7 @@ class SessionServiceTests(unittest.TestCase):
         finally:
             connection.close()
         self.sessions = SessionService(self.database, idle_seconds=60, absolute_seconds=300)
-        self.now = datetime(2026, 9, 22, tzinfo=timezone.utc)
+        self.now = datetime.now(timezone.utc)
 
     def tearDown(self) -> None:
         self.directory.cleanup()

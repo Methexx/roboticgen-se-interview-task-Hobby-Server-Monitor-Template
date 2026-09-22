@@ -8,6 +8,7 @@ import sqlite3
 import hashlib
 import re
 import uuid
+import time
 
 import falcon
 
@@ -82,7 +83,13 @@ class CreateContainerResource:
         capacity = self._capacity.get(request.context.user.id)
         if not capacity["feasible"]: raise falcon.HTTPConflict(description="Creation is not feasible: " + ", ".join(capacity["constraints"]))
         self._validate_options(payload, capacity)
-        request_hash = hashlib.sha256(repr(sorted(payload.items())).encode()).hexdigest()
+        request_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")).hexdigest()
+        connection = connect(self._path)
+        try:
+            duplicate = connection.execute("SELECT 1 FROM containers WHERE project=? AND current_name=? AND lifecycle='present'", (capacity["creation_project"], payload["name"])).fetchone()
+        finally:
+            connection.close()
+        if duplicate: raise falcon.HTTPConflict(description="A container with this name already exists")
         ram, cpu, disk = payload["ram_bytes"], payload["cpu_cores"], payload["disk_bytes"]
         operation = OperationService(self._path)
         try:
@@ -92,11 +99,14 @@ class CreateContainerResource:
         if not created:
             response.status = falcon.HTTP_202; response.media = {"operation_id": operation_id}; return
         config = {"limits.memory": str(ram), "limits.cpu": str(cpu), "limits.cpu.allowance": f"{payload['cpu_allowance_pct']}%", "limits.processes": str(payload["process_limit"]), "security.privileged": "false", "security.nesting": "false", "boot.autostart": str(payload["autostart"]).lower(), "volatile.apply_template": "create"}
-        lxd_payload = {"name": payload["name"], "type": "container", "source": {"type": "image", "fingerprint": next(item["fingerprint"] for item in capacity["images"] if item["alias"] == payload["image"])}, "profiles": [payload["profile"]], "config": config, "ephemeral": payload["ephemeral"], "description": payload["description"]}
+        lxd_payload = {"name": payload["name"], "type": "container", "source": {"type": "image", "fingerprint": next(item["fingerprint"] for item in capacity["images"] if item["alias"] == payload["image"])}, "profiles": [payload["profile"]], "config": config, "devices": {"root": {"type": "disk", "path": "/", "pool": payload["pool"], "size": str(disk)}, "eth0": {"type": "nic", "nictype": "bridged", "network": payload["network"]}}, "ephemeral": payload["ephemeral"], "description": payload["description"]}
+        started = time.monotonic()
         try:
             result = self._creator.create(capacity["creation_project"], lxd_payload, payload["start"])
         except DiscoveryError as error:
             operation.finish(operation_id, status="unknown", error_code=error.kind)
+            import logging
+            logging.getLogger("hsm.lxd").warning("lxd_create_unconfirmed operation_id=%s exception=%s category=%s elapsed_ms=%d", operation_id, type(error.__cause__).__name__ if error.__cause__ else type(error).__name__, error.kind, int((time.monotonic()-started)*1000))
             raise falcon.HTTPServiceUnavailable(description=error.message) from error
         container_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"lxd:{capacity['creation_project']}:{result['lxd_uuid']}"))
         try:
@@ -116,7 +126,7 @@ class CreateContainerResource:
 
     @staticmethod
     def _validate(payload: dict[str, object]) -> None:
-        if not isinstance(payload["name"], str) or not re.fullmatch(r"[a-z][a-z0-9-]{2,62}", payload["name"]): raise falcon.HTTPBadRequest(description="name is invalid")
+        if not isinstance(payload["name"], str) or not re.fullmatch(r"[a-z][a-z0-9-]{2,62}", payload["name"]) or payload["name"].endswith("-"): raise falcon.HTTPBadRequest(description="name is invalid")
         for field in ("image", "pool", "network", "profile", "description"):
             if not isinstance(payload[field], str) or len(payload[field]) > 256: raise falcon.HTTPBadRequest(description=f"{field} is invalid")
         for field in ("ram_bytes", "cpu_cores", "cpu_allowance_pct", "disk_bytes", "process_limit"):
@@ -131,6 +141,9 @@ class CreateContainerResource:
         selected = next(item for item in capacity["profiles"] if item["name"] == payload["profile"])
         if selected.get("root_pool") != payload["pool"] or selected.get("network") != payload["network"]:
             raise falcon.HTTPBadRequest(description="Profile does not match the selected root disk and network")
+        pool = next(item for item in capacity["pools"] if item["name"] == payload["pool"])
+        if payload["disk_bytes"] > pool.get("available_bytes", 0):
+            raise falcon.HTTPConflict(description="Requested disk allocation exceeds selected pool capacity")
 
 
 class ContainerResource:

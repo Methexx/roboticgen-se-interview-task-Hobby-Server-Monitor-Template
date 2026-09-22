@@ -147,8 +147,9 @@ class CreateContainerResource:
 
 
 class ContainerResource:
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: Path, creator: LxdCreator | None = None) -> None:
         self._database_path = database_path
+        self._mutation = ContainerMutationResource(database_path, creator) if creator else None
 
     def on_get(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
         connection = connect(self._database_path)
@@ -162,3 +163,60 @@ class ContainerResource:
         if row is None:
             raise falcon.HTTPNotFound(description="Container not found")
         response.media = _item(row)
+
+    def on_delete(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
+        if self._mutation is None: raise falcon.HTTPServiceUnavailable(description="Container mutations are unavailable")
+        self._mutation.on_delete(request, response)
+
+
+class ContainerMutationResource:
+    def __init__(self, database_path: Path, creator: LxdCreator) -> None:
+        self._path, self._creator = database_path, creator
+
+    def on_post(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
+        action = request.context.route_params["action"]
+        if action not in {"start", "stop", "restart", "freeze", "unfreeze"}:
+            raise falcon.HTTPNotFound(description="Unsupported container action")
+        self._mutate(request, response, action)
+
+    def on_delete(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
+        if request.content_type != "application/json" or request.media != {"confirm": True}:
+            raise falcon.HTTPBadRequest(description="Deletion requires confirm=true")
+        self._mutate(request, response, "delete")
+
+    def _mutate(self, request: falcon.Request, response: falcon.Response, action: str) -> None:
+        key = request.get_header("Idempotency-Key")
+        if not key or len(key) > 128: raise falcon.HTTPBadRequest(description="Idempotency-Key is required")
+        identifier = request.context.route_params["container_id"]
+        connection = connect(self._path)
+        try:
+            row = connection.execute("SELECT project,current_name,managed FROM containers WHERE id=? AND lifecycle='present'", (identifier,)).fetchone()
+        finally: connection.close()
+        if row is None or not row[2]: raise falcon.HTTPNotFound(description="Managed container not found")
+        service = OperationService(self._path)
+        try:
+            operation_id, created = service.begin(actor_id=request.context.user.id, kind=f"container.{action}", request_hash=hashlib.sha256(f"{identifier}:{action}".encode()).hexdigest(), idempotency_key=key, target_id=identifier)
+        except OperationConflict as error: raise falcon.HTTPConflict(description=str(error)) from error
+        if not created:
+            response.status=falcon.HTTP_202; response.media={"operation_id":operation_id}; return
+        try:
+            self._creator.action(row[0], row[1], action)
+        except DiscoveryError as error:
+            service.finish(operation_id,status="unknown",error_code=error.kind)
+            raise falcon.HTTPServiceUnavailable(description=error.message) from error
+        connection=connect(self._path)
+        try:
+            with connection:
+                if action == "delete": connection.execute("UPDATE containers SET lifecycle='deleted',deleted_at=datetime('now') WHERE id=?", (identifier,))
+                connection.execute("UPDATE operations SET status='succeeded',completed_at=datetime('now') WHERE id=?", (operation_id,))
+                connection.execute("INSERT INTO audit_log(ts,actor_user_id,action,target_type,target_id,target_name,operation_id,detail_json,outcome) VALUES(datetime('now'),?,?,?,?,?,?,?, 'ok')", (request.context.user.id, f"container.{action}", "container", identifier, row[1], operation_id, "{}"))
+        finally: connection.close()
+        response.status=falcon.HTTP_204
+
+
+class ContainerActionResource:
+    def __init__(self, database_path: Path, creator: LxdCreator) -> None:
+        self._mutation = ContainerMutationResource(database_path, creator)
+
+    def on_post(self, request: falcon.Request, response: falcon.Response, **params: str) -> None:
+        self._mutation.on_post(request, response)

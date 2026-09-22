@@ -23,3 +23,13 @@ class LxdCreator:
             text = str(error).lower()
             kind = "timeout" if "timeout" in text else "unavailable" if any(x in text for x in ("connection", "socket", "refused")) else "malformed"
             raise DiscoveryError(kind, "LXD create outcome could not be confirmed") from error
+
+    def action(self, project: str, name: str, action: str) -> None:
+        try:
+            instance = self._factory(project=project, timeout=self._timeout).instances.get(name)
+            if action == "delete": instance.delete(wait=True)
+            else: getattr(instance, action)(wait=True)
+        except Exception as error:
+            text = str(error).lower()
+            kind = "timeout" if "timeout" in text else "unavailable" if any(x in text for x in ("connection", "socket", "refused")) else "malformed"
+            raise DiscoveryError(kind, "LXD mutation outcome could not be confirmed") from error

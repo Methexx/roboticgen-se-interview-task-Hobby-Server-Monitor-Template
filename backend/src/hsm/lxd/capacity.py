@@ -67,6 +67,6 @@ class CapacityService:
                     identifier = str(uuid.uuid5(uuid.NAMESPACE_URL, f"lxd:{item['project']}:{item['lxd_uuid']}"))
                     connection.execute("""INSERT INTO containers(id,project,lxd_uuid,current_name,managed,isolation_status,lifecycle,first_seen_at,last_seen_at)
                     VALUES(?,?,?,?,0,'unknown','present',datetime('now'),datetime('now'))
-                    ON CONFLICT(project,lxd_uuid) DO UPDATE SET current_name=excluded.current_name,last_seen_at=excluded.last_seen_at,lifecycle='present'""", (identifier, item["project"], item["lxd_uuid"], item["name"]))
+                    ON CONFLICT(project,lxd_uuid) WHERE lxd_uuid IS NOT NULL DO UPDATE SET current_name=excluded.current_name,last_seen_at=excluded.last_seen_at,lifecycle='present'""", (identifier, item["project"], item["lxd_uuid"], item["name"]))
         finally:
             connection.close()

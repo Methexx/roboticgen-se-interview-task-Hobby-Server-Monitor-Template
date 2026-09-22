@@ -123,7 +123,8 @@ class LxdDiscovery:
             data = item if isinstance(item, dict) else self._get(root, f"storage_pools/{name}")
             if not isinstance(data, dict):
                 raise DiscoveryError("malformed", "Storage pool detail is malformed")
-            space = data.get("resources", {}).get("space", {})
+            resources = data.get("resources") if isinstance(data.get("resources"), dict) else self._get(root, f"storage_pools/{name}/resources")
+            space = resources.get("space", {}) if isinstance(resources, dict) else {}
             total, used, driver = space.get("total"), space.get("used"), data.get("driver")
             if not isinstance(driver, str) or not isinstance(total, int) or not isinstance(used, int) or total < 0 or used < 0:
                 raise DiscoveryError("malformed", "Storage pool capacity is unavailable")

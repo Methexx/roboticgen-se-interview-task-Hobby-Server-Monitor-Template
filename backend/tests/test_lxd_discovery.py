@@ -72,6 +72,11 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(discovery.networks()[0].name, "br")
         self.assertTrue(discovery.profiles("good")[0].safe)
 
+    def test_shared_image_is_a_server_derived_option(self):
+        routes = {("good", "images"): [], (None, "images"): [{"fingerprint": "fp", "aliases": [], "properties": {"os": "ubuntu", "version": "24.04"}}]}
+        image = LxdDiscovery(client_for(routes), 3).image_aliases("good")[0]
+        self.assertEqual((image.alias, image.fingerprint), ("ubuntu:24.04", "fp"))
+
     def test_unsafe_profile_is_not_approved(self):
         routes = {("good", "profiles"): ["unsafe"], ("good", "profiles/unsafe"): {"config": {"security.privileged": "true"}, "devices": {}}}
         profile = LxdDiscovery(client_for(routes), 3).profiles("good")[0]

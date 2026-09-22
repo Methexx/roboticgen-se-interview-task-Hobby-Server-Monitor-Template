@@ -168,6 +168,10 @@ class LxdDiscovery:
         data = self._get(self._client(project), "images")
         if not isinstance(data, list):
             raise DiscoveryError("malformed", "Image list is malformed")
+        if not data:
+            # Projects without their own image feature consume the daemon's
+            # shared image store; this remains read-only and server-derived.
+            data = self._get(self._client(), "images")
         aliases: list[ImageAlias] = []
         for image in data:
             if not isinstance(image, dict) or not isinstance(image.get("fingerprint"), str):
@@ -176,6 +180,9 @@ class LxdDiscovery:
                 name = alias.get("name") if isinstance(alias, dict) else None
                 if isinstance(name, str) and name:
                     aliases.append(ImageAlias(name, image["fingerprint"]))
+            properties = image.get("properties", {})
+            if not aliases and isinstance(properties, dict) and isinstance(properties.get("os"), str) and isinstance(properties.get("version"), str):
+                aliases.append(ImageAlias(f"{properties['os']}:{properties['version']}", image["fingerprint"]))
         return aliases
 
     def networks(self) -> list[Network]:

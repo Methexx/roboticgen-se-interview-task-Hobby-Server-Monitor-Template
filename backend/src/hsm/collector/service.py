@@ -104,9 +104,8 @@ class Collector:
             path = self._metrics_dir / f"metrics-{stamp:%Y%m%d%H}.tinyflux"
             fields = {key: value for key, value in asdict(snapshot).items() if key not in {"container_id", "ipv4", "sampled_at", "state", "image", "os_version", "error_code"} and value is not None}
             fields.update({"state": snapshot.state, "ipv4_json": json.dumps(snapshot.ipv4), "image": snapshot.image or "", "os_version": snapshot.os_version or ""})
-            database = TinyFlux(str(path))
-            database.insert(Point.from_dict({"measurement": "container", "time": snapshot.sampled_at, "tags": {"container_id": snapshot.container_id}, "fields": fields}))
-            database.close()
+            with TinyFlux(str(path)) as database:
+                database.insert(Point.from_dict({"measurement": "container", "time": snapshot.sampled_at, "tags": {"container_id": snapshot.container_id}, "fields": fields}))
             self._retain()
         except Exception as error:
             self._status({"observed_at": _utc_now(), "state": "tinyflux_error", "error": type(error).__name__})

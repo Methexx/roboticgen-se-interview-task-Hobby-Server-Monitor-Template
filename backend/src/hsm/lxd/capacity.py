@@ -59,7 +59,7 @@ class CapacityService:
                 "pools": pools, "networks": networks, "images": capacity["images"], "profiles": profiles,
                 "bounds": bounds, "partial": inventory["partial"]}
 
-    def _reconcile(self, instances: list[dict[str, str]]) -> None:
+    def _reconcile(self, instances: list[dict[str, object]]) -> None:
         connection = connect(self.path)
         try:
             with connection:
@@ -68,5 +68,13 @@ class CapacityService:
                     connection.execute("""INSERT INTO containers(id,project,lxd_uuid,current_name,managed,isolation_status,lifecycle,first_seen_at,last_seen_at)
                     VALUES(?,?,?,?,0,'unknown','present',datetime('now'),datetime('now'))
                     ON CONFLICT(project,lxd_uuid) WHERE lxd_uuid IS NOT NULL DO UPDATE SET current_name=excluded.current_name,last_seen_at=excluded.last_seen_at,lifecycle='present'""", (identifier, item["project"], item["lxd_uuid"], item["name"]))
+                    existing = connection.execute("SELECT managed FROM containers WHERE id=?", (identifier,)).fetchone()
+                    allocation = item.get("allocation", {})
+                    if existing and existing[0] == 0:
+                        if allocation.get("unknown"):
+                            connection.execute("INSERT INTO container_allocations(container_id,verified_at) VALUES(?,datetime('now')) ON CONFLICT(container_id) DO UPDATE SET ram_bytes=NULL,cpu_cores=NULL,cpu_allowance_pct=NULL,disk_bytes=NULL,pool=NULL,verified_at=datetime('now')", (identifier,))
+                        else:
+                            connection.execute("""INSERT INTO container_allocations(container_id,ram_bytes,cpu_cores,cpu_allowance_pct,disk_bytes,pool,verified_at)
+                            VALUES(?,?,?,?,?,?,datetime('now')) ON CONFLICT(container_id) DO UPDATE SET ram_bytes=excluded.ram_bytes,cpu_cores=excluded.cpu_cores,cpu_allowance_pct=excluded.cpu_allowance_pct,disk_bytes=excluded.disk_bytes,pool=excluded.pool,verified_at=excluded.verified_at""", (identifier, allocation["ram_bytes"], allocation["cpu_cores"], allocation["cpu_allowance_pct"], allocation["disk_bytes"], allocation["pool"]))
         finally:
             connection.close()

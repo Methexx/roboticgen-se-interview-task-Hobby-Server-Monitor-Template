@@ -30,7 +30,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_inventory_keeps_partial_project_failure_explicit(self):
         def factory(project=None, timeout=None):
             if project == "bad": return SimpleNamespace(api=SimpleNamespace(instances=SimpleNamespace(get=lambda **_: (_ for _ in ()).throw(RuntimeError("malformed")))))
-            if project == "good": return SimpleNamespace(api=SimpleNamespace(instances=SimpleNamespace(get=lambda **_: Response([{ "name":"x", "status":"RUNNING", "config":{"volatile.uuid":"uuid"}}]))))
+            if project == "good": return SimpleNamespace(api=SimpleNamespace(instances=SimpleNamespace(get=lambda **_: Response([{ "name":"x", "status":"RUNNING", "config":{"volatile.uuid":"uuid"}, "expanded_config":{}, "expanded_devices":{}}]))))
             return SimpleNamespace(projects=SimpleNamespace(all=lambda: [SimpleNamespace(name="good"), SimpleNamespace(name="bad")]))
         result=LxdDiscovery(factory, 3).inventory()
         self.assertEqual(result["instances"][0]["lxd_uuid"], "uuid")
@@ -44,6 +44,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_typed_capacity_options_use_injected_client(self):
         routes = {
             (None, ""): {"environment": {"server_cpu_total": 8, "server_memory_total": 100}},
+            (None, "resources"): {"cpu": {"total": 8}, "memory": {"total": 100}},
             (None, "storage_pools"): ["pool-a"],
             (None, "networks"): ["br0"],
             (None, "storage_pools/pool-a"): {"driver": "btrfs", "resources": {"space": {"total": 1000, "used": 250}}},

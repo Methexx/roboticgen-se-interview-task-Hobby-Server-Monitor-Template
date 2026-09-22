@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from typing import Any, Callable
+import re
 
 
 @dataclass(frozen=True)
@@ -104,11 +105,43 @@ class LxdDiscovery:
                     name, status = item.get("name"), item.get("status")
                     if not all(isinstance(value, str) and value for value in (identifier, name, status)):
                         raise ValueError("instance identity is incomplete")
-                    instances.append({"project": project, "lxd_uuid": identifier, "name": name, "status": status})
+                    detail = item if "expanded_config" in item and "expanded_devices" in item else self._get(self._client(project), f"instances/{name}")
+                    expanded_config = detail.get("expanded_config", config) if isinstance(detail, dict) else config
+                    expanded_devices = detail.get("expanded_devices", item.get("devices", {})) if isinstance(detail, dict) else item.get("devices", {})
+                    instances.append({"project": project, "lxd_uuid": identifier, "name": name, "status": status,
+                                      "allocation": self._allocation(expanded_config, expanded_devices)})
             except (DiscoveryError, ValueError) as error:
                 kind = error.kind if isinstance(error, DiscoveryError) else "malformed"
                 partial.append({"project": project, "error": kind})
         return {"projects": projects, "instances": instances, "partial": partial}
+
+    @staticmethod
+    def _allocation(config: Any, devices: Any) -> dict[str, Any]:
+        if not isinstance(config, dict) or not isinstance(devices, dict):
+            return {"unknown": True}
+        memory = LxdDiscovery._bytes(config.get("limits.memory"))
+        cpu = config.get("limits.cpu")
+        root = next((device for device in devices.values() if isinstance(device, dict) and device.get("type") == "disk" and device.get("path") == "/"), None)
+        disk = LxdDiscovery._bytes(root.get("size")) if root else None
+        pool = root.get("pool") if root else None
+        if memory is None or type(cpu) is not str or not re.fullmatch(r"[1-9][0-9]*", cpu) or disk is None or not isinstance(pool, str) or not pool:
+            return {"unknown": True}
+        return {"unknown": False, "ram_bytes": memory, "cpu_cores": int(cpu), "disk_bytes": disk, "pool": pool,
+                "cpu_allowance_pct": LxdDiscovery._allowance(config.get("limits.cpu.allowance"))}
+
+    @staticmethod
+    def _bytes(value: Any) -> int | None:
+        if type(value) is int and value > 0: return value
+        if not isinstance(value, str): return None
+        match = re.fullmatch(r"([1-9][0-9]*)(B|KiB|MiB|GiB|TiB)?", value)
+        if not match: return None
+        units = {None: 1, "B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
+        return int(match.group(1)) * units[match.group(2)]
+
+    @staticmethod
+    def _allowance(value: Any) -> int | None:
+        if not isinstance(value, str) or not re.fullmatch(r"([1-9]|[1-9][0-9]|100)%", value): return None
+        return int(value[:-1])
 
     def pools(self) -> list[Pool]:
         root = self._client()
@@ -201,11 +234,12 @@ class LxdDiscovery:
     def capacity(self, creation_project: str | None = None) -> dict[str, Any]:
         root = self._client()
         server = self._get(root, "")
+        resources = self._get(root, "resources")
         environment = server.get("environment", {}) if isinstance(server, dict) else {}
         if not isinstance(environment, dict):
             raise DiscoveryError("malformed", "Host environment is malformed")
         payload: dict[str, Any] = {
-            "host": {"cpu_total": environment.get("server_cpu_total"), "memory_total": environment.get("server_memory_total")},
+            "host": {"cpu_total": resources.get("cpu", {}).get("total"), "memory_total": resources.get("memory", {}).get("total")},
             "pools": [asdict(pool) for pool in self.pools()],
             "networks": [asdict(network) for network in self.networks()],
             "images": [], "profiles": [],

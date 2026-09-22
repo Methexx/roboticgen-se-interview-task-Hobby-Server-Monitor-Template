@@ -434,3 +434,23 @@ For technical clarifications,
 
 The independent collector writes latest snapshots to SQLite and hourly TinyFlux partitions. API history reads the bounded SQLite cache only; it never opens TinyFlux. History ranges are limited to 15m, 1h, 6h, 24h, or 7d and return at most 300 points.
 
+
+## Architecture
+
+Falcon is the control plane, SQLite stores identities, authorization, operations, allocations, and latest snapshots, and the separately run collector is the only TinyFlux reader/writer. LXD names are display data; the control plane uses project plus LXD UUID.
+
+## Configuration and setup
+
+Create an ignored `.env` from `.env.example`, set the database and metric paths, then configure Google client ID, secret, callback URL, and bootstrap email locally. On WSL, install LXD, retain existing pools/projects, and ensure the service user can access the LXD socket. Google credentials are never committed.
+
+## API and security
+
+Routes use explicit method policies. Sessions are opaque and hashed. OAuth state is browser-bound, single-use, and PKCE-protected. Container authorization uses stable IDs before resolving LXD data. Create and mutation paths have idempotency, audit intent, and uncertain-outcome records. Containers are unprivileged with nesting disabled.
+
+## Deployment
+
+Install `deploy/hsm-api.service` and `deploy/hsm-collector.service`, provide `/etc/hsm/hsm.env`, and run behind a TLS-terminating reverse proxy. The units were authored but not deployed or reboot-tested in this workspace.
+
+## Operational limitations
+
+Frontend production build remains unverified because npm registry downloads failed with `ECONNRESET`. OAuth callback code exists but has not been live-verified because local OAuth credentials were not configured. Terminal test coverage and detached-process behavior remain final-verification gaps.

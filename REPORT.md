@@ -323,3 +323,19 @@ What is unfinished, broken, simulated, or deliberately cut — and why.
 Which tools, for which parts of the system, what you accepted as-is, and
 what you rejected or had to fix. You should be able to explain every line
 you submit, AI-assisted or not.
+
+- Sprint 4: added project-aware collector polling, hourly TinyFlux partitions, bounded SQLite history cache, history, accounting, and consumption API source. Focused collector, migration, and app checks passed where recorded in commits.
+
+
+## Final verification evidence
+
+- Backend suite: `wsl -d Ubuntu-24.04 -- bash -lc 'cd backend && timeout 120 .venv/bin/python -m unittest discover -s tests'` completed on 2026-09-22: 48 tests passed in 2.155 seconds.
+- TinyFlux collector warning: fixed by `679bf66` through deterministic context-manager closure. Collector tests pass with `ResourceWarning` promoted to an error.
+- LXD disposable evidence: `hsm-disposable-0a303c8dcc` was created in `hsm` via the application resource; an Admin in-container command returned `admin-ok`, exit code 0, duration 212 ms. The first delete was rejected while running, then the same disposable was stopped and deleted through the application mutation resource. Smoke containers were not changed.
+- Frontend build: unverified. Both permitted npm installs stalled because registry fetches logged `ECONNRESET`; Astro was not installed.
+- OAuth: callback/login code exists but live verification is unverified because ignored local OAuth credentials were not configured.
+- Collector independence, LXD interruption recovery, resource footprint, and full terminal role/timeout/truncation coverage remain unverified.
+
+## AI Tool Usage
+
+Codex was used to implement and review backend, frontend source, deployment units, and documentation; all recorded tests and LXD actions above were executed in this workspace. Several generated paths required corrections after real LXD or TinyFlux behavior differed from assumptions. Unverified behavior is explicitly retained as a limitation.

@@ -97,6 +97,15 @@ MIGRATIONS: tuple[Migration, ...] = (
         "CREATE INDEX audit_log_ts_idx ON audit_log(ts)",
         "CREATE INDEX audit_log_target_ts_idx ON audit_log(target_id, ts)",
     )),
+    (3, ("""CREATE TABLE metrics_history (
+        container_id TEXT NOT NULL REFERENCES containers(id), sampled_at TEXT NOT NULL,
+        state TEXT NOT NULL, cpu_pct REAL, ram_used_bytes INTEGER, disk_used_bytes INTEGER,
+        net_rx_bytes INTEGER, net_tx_bytes INTEGER, PRIMARY KEY(container_id, sampled_at)
+    )""", "CREATE INDEX metrics_history_container_time_idx ON metrics_history(container_id, sampled_at)")),
+    (4, ("""CREATE TABLE execution_slots (
+        operation_id TEXT PRIMARY KEY REFERENCES operations(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id), acquired_at TEXT NOT NULL, deadline_at TEXT NOT NULL
+    )""", "CREATE UNIQUE INDEX execution_slots_user_idx ON execution_slots(user_id)")),
 )
 
 

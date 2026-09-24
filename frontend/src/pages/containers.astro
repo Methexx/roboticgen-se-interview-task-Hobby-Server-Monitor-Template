@@ -1,0 +1,15 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="Manage containers">
+  <h1>Container management</h1>
+  <p id="state" aria-live="polite">Loading capacity…</p>
+  <form id="create" hidden><input name="name" required pattern="[a-z][a-z0-9-]{2,62}" placeholder="Container name" /><select name="image"></select><select name="profile"></select><input name="ram_bytes" type="number" required /><input name="cpu_cores" type="number" required /><input name="disk_bytes" type="number" required /><button>Create</button></form>
+  <p id="error" role="alert"></p>
+  <script>
+    import {api, json, ApiError} from "../lib/api";
+    const state=document.querySelector('#state')!, form=document.querySelector<HTMLFormElement>('#create')!, error=document.querySelector('#error')!;
+    async function load(){try {const c=await api<any>('/api/host/capacity'); if(!c.feasible){state.textContent=`Creation unavailable: ${c.constraints.join(', ')}`;return;} state.textContent='Choose server-approved limits.';form.hidden=false; for(const [key,items] of Object.entries({image:c.images,profile:c.profiles}) as any){const s=form.elements.namedItem(key) as HTMLSelectElement; s.replaceChildren(...items.map((x:any)=>new Option(x.alias??x.name,x.alias??x.name)));} for(const k of ['ram_bytes','cpu_cores','disk_bytes']){const i=form.elements.namedItem(k) as HTMLInputElement;i.max=c.bounds[k].max;i.value=Math.min(c.bounds[k].max,k==='cpu_cores'?1:Math.floor(c.bounds[k].max/4));}}catch(e){state.textContent=e instanceof ApiError&&e.status===403?'Forbidden.':'LXD capacity is unavailable or stale.';}}
+    form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const d=new FormData(form);const c=await api<any>('/api/host/capacity');const p=c.profiles.find((x:any)=>x.name===d.get('profile'));try{await api('/api/containers',{...json('POST',{name:d.get('name'),image:d.get('image'),pool:p.root_pool,network:p.network,profile:p.name,ram_bytes:+d.get('ram_bytes')!,cpu_cores:+d.get('cpu_cores')!,cpu_allowance_pct:100,disk_bytes:+d.get('disk_bytes')!,process_limit:512,autostart:false,ephemeral:false,start:false,description:'Created from dashboard'}),headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}});state.textContent='Created.';}catch(e){error.textContent=e instanceof ApiError?e.message:'Request failed.';}});load();
+  </script>
+</Base>

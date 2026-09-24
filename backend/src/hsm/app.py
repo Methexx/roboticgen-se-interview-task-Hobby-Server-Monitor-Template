@@ -9,9 +9,13 @@ import falcon
 
 from hsm.auth.sessions import SessionService
 from hsm.api.users import AssignmentResource, UserResource, UsersResource
-from hsm.api.containers import ContainerResource, ContainersResource
+from hsm.api.containers import ContainerActionResource, ContainerLimitsResource, ContainerResource, ContainersResource
 from hsm.api.me import MeResource, MyQuotaResource
 from hsm.api.host import HostCapacityResource
+from hsm.api.history import ConsumptionResource, HistoryResource
+from hsm.api.accounting import AccountingResource
+from hsm.api.exec import ExecResource
+from hsm.api.oauth import LogoutResource, OAuthCallbackResource, OAuthLoginResource
 from hsm.lxd.discovery import LxdDiscovery
 from hsm.lxd.creation import LxdCreator
 from hsm.lxd.capacity import CapacityService
@@ -99,6 +103,9 @@ def create_app(settings: Settings) -> falcon.App:
     app.add_error_handler(falcon.HTTPError, _http_error)
     app.add_error_handler(Exception, _unexpected_error)
     registry.add_route(app, "/healthz", HealthResource(), {"GET": Policy.PUBLIC})
+    registry.add_route(app, "/auth/login", OAuthLoginResource(settings), {"GET": Policy.PUBLIC})
+    registry.add_route(app, "/auth/callback", OAuthCallbackResource(settings, sessions), {"GET": Policy.PUBLIC})
+    registry.add_route(app, "/auth/logout", LogoutResource(sessions), {"POST": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/users", UsersResource(settings.database_path), {
         "GET": Policy.ADMIN, "POST": Policy.ADMIN,
     })
@@ -117,11 +124,18 @@ def create_app(settings: Settings) -> falcon.App:
     registry.add_route(app, "/api/containers", ContainersResource(
         settings.database_path, capacity, LxdCreator(Client, settings.lxd_timeout_seconds),
     ), {"GET": Policy.AUTHENTICATED, "POST": Policy.ADMIN})
-    registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path), {
-        "GET": Policy.CONTAINER_ACCESS,
+    creator = LxdCreator(Client, settings.lxd_timeout_seconds)
+    registry.add_route(app, "/api/containers/{container_id}", ContainerResource(settings.database_path, creator), {
+        "GET": Policy.CONTAINER_ACCESS, "DELETE": Policy.ADMIN,
     })
+    registry.add_route(app, "/api/containers/{container_id}/actions/{action}", ContainerActionResource(settings.database_path, creator), {"POST": Policy.ADMIN})
+    registry.add_route(app, "/api/containers/{container_id}/limits", ContainerLimitsResource(settings.database_path, creator), {"PATCH": Policy.ADMIN})
+    registry.add_route(app, "/api/containers/{container_id}/history", HistoryResource(settings.database_path), {"GET": Policy.CONTAINER_ACCESS})
+    registry.add_route(app, "/api/containers/{container_id}/consumption", ConsumptionResource(settings.database_path), {"GET": Policy.ADMIN})
+    registry.add_route(app, "/api/containers/{container_id}/exec", ExecResource(settings.database_path, creator), {"POST": Policy.CONTAINER_ACCESS})
     registry.add_route(app, "/api/me", MeResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/me/quota", MyQuotaResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     registry.add_route(app, "/api/host/capacity", HostCapacityResource(capacity), {"GET": Policy.ADMIN})
+    registry.add_route(app, "/api/accounting", AccountingResource(settings.database_path), {"GET": Policy.AUTHENTICATED})
     app.req_options.auto_parse_form_urlencoded = False
     return app

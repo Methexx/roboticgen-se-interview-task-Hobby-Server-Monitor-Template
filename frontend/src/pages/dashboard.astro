@@ -6,6 +6,7 @@ import Base from "../layouts/Base.astro";
   <p id="dashboard-state" class="state" aria-live="polite">Loading snapshots…</p>
   <section id="quota" class="card" hidden><h2>My budget</h2><p></p></section>
   <section class="card"><h2>Assigned containers</h2><div id="containers"></div></section>
+  <section class="card"><h2>History and accounting</h2><p id="history-state">Select a container to load up to 300 historical points. Snapshot state reports stale, partial, or LXD-down collection.</p></section>
   <p><a href="/users">Manage users</a> (admins only)</p>
   <script>
     import { api, ApiError } from "../lib/api";
